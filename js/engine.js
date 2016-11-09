@@ -91,9 +91,13 @@ var Engine = (function(global) {
      * render methods.
      */
     function updateEntities(dt) {
-        allEnemies.forEach(function(enemy) {
-            enemy.update(dt);
-        });
+        for (var i = 0; i < allEnemies.length; i++) {
+            allEnemies[i].update(dt, i);
+        }
+
+        // allEnemies.forEach(function(enemy) {
+        //     enemy.update(dt, enemy);
+        // });
         player.update();
     }
 
