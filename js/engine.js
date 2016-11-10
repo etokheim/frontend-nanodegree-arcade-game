@@ -115,7 +115,7 @@ var Engine = (function(global) {
 		 * for that particular row of the game level.
 		 */
 		var rowImages = [
-				'images/water-block.png',   // Top row is water
+				'images/grass-block.png',   // Top row is water
 				'images/stone-block.png',   // Row 1 of 3 of stone
 				'images/stone-block.png',   // Row 2 of 3 of stone
 				'images/stone-block.png',   // Row 3 of 3 of stone
@@ -144,6 +144,7 @@ var Engine = (function(global) {
 		}
 
 		renderEntities();
+		scoreTable.render();
 	}
 
 	/* This function is called by the render function and is called on each game

@@ -1,3 +1,46 @@
+// Setup
+var debugging = {
+	"collision": {
+		"boolean": true,
+		"displayTarget": function(object) {
+			if(this.boolean) {
+				if(Object.prototype.toString.call( object ) === '[object Array]') {
+					for (var i = 0; i < object.length; i++) {
+						ctx.beginPath();
+						ctx.strokeStyle = "#FF0000";
+						ctx.rect(object[i].x, object[i].collisionY, object[i].width, object[i].height);
+						ctx.stroke();
+					}
+				} else {
+					ctx.beginPath();
+					ctx.strokeStyle = "#FF0000";
+					ctx.rect(object.x, object.collisionY, object.width, object.height);
+					ctx.stroke();
+				}
+			}
+		}
+	}
+},
+
+	scoreTable = {
+	"render": function() {
+		var canvas = document.getElementsByTagName("canvas")[0];
+		ctx.fillStyle = "rgb(0, 0, 0)";
+		ctx.font = "24px Arial";
+		ctx.textAlign = "center";
+		ctx.textBaseline = "top";
+		ctx.fillText("Score: " + player.score, canvas.width / 2, 32);
+	}
+},
+
+	tiles = {
+		"width": 101,
+		"height": 82,
+		"padding": {
+			"top": 50
+		}
+	}
+
 var enemyIndex = 0;
 
 // Enemies our player must avoid
@@ -61,15 +104,7 @@ Enemy.prototype.update = function(dt, index) {
 
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
-	// var canvas = document.getElementsByTagName("canvas")[0];
-	// ctx.clearRect(0, 0, canvas.width, canvas.height);
-	var canvas = document.getElementsByTagName("canvas")[0];
-	for (var i = 0; i < allEnemies.length; i++) {
-		ctx.beginPath();
-		ctx.strokeStyle = "#FF0000";
-		ctx.rect(allEnemies[i].x, allEnemies[i].collisionY, allEnemies[i].width, allEnemies[i].height);
-		ctx.stroke();
-	}
+	debugging.collision.displayTarget(allEnemies);
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
@@ -78,12 +113,27 @@ Enemy.prototype.render = function() {
 // a handleInput() method.
 var Player = function() {
 	this.x = 202;
+	this.defaultX = 202;
+
 	this.y = 375;
+	this.defaultY = 375;
 	// To offset the collision box
 	this.collisionY = this.y + 75 + 17;
+	this.defaultCollisionY = this.defaultY + 75 + 17;
 	this.width = 101;
 	this.height = 83;
 	this.sprite = 'images/char-boy.png';
+
+	this.score = 0;
+
+	this.xSpeed = 101;
+	this.ySpeed = 83;
+
+	this.resetPosition = function() {
+		this.x = this.defaultX;
+		this.collisionY = this.defaultCollisionY;
+		this.y = this.defaultY;
+	}
 };
 
 
@@ -92,45 +142,43 @@ var Player = function() {
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 var allEnemies = [];
-for (var i = 0; i < allEnemies.length; i++) {
-	console.log(allEnemies[i]);
-}
 
 var player = new Player();
 
 Player.prototype.update = function() {
-
+	if(player.collisionY < tiles.padding.top) {
+		player.score += 10;
+		player.resetPosition();
+	}
 };
 
 Player.prototype.render = function() {
-	console.log("Height = " + this.height + ", CollisionY = " + this.collisionY + ", y = " +  this.y);
 	var canvas = document.getElementsByTagName("canvas")[0];
 
-	ctx.beginPath();
-	ctx.rect(this.x, this.collisionY, this.width, this.height);
-	ctx.strokeStyle = "#FF0000";
-	ctx.stroke();
-	ctx.closePath();
+	debugging.collision.displayTarget(player);
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
 Player.prototype.handleInput = function(input) {
+	var canvas = document.getElementsByTagName("canvas")[0];
+
+	// if(input === "up" && this.collisionY - this.ySpeed > 0) {
 	if(input === "up") {
-		this.y -= 83;
-		this.collisionY -= 83;
+		this.y -= this.ySpeed;
+		this.collisionY -= this.ySpeed;
 	}
 
-	if(input === "right") {
-		this.x += 100;
+	if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
+		this.y += this.ySpeed;
+		this.collisionY += this.ySpeed;
 	}
 
-	if(input === "down") {
-		this.y += 83;
-		this.collisionY += 83;
+	if(input === "right" && this.x + this.xSpeed < canvas.width) {
+		this.x += this.xSpeed;
 	}
 
-	if(input === "left") {
-		this.x -= 100;
+	if(input === "left" && this.x - this.xSpeed > -1) {
+		this.x -= this.xSpeed;
 	}
 };
 
@@ -153,7 +201,8 @@ var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
 		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
 			allEnemies[i].collisionY + allEnemies[i].height > player.collisionY && allEnemies[i].collisionY < player.collisionY + player.height) {
-			alert("collision!");
+			player.score -= 5;
+			player.resetPosition();
 		}
 	}
 };
