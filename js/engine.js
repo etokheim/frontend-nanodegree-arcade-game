@@ -145,6 +145,7 @@ var Engine = (function(global) {
 
 		renderEntities();
 		scoreTable.render();
+		scoreTable.displayFinalScore();
 	}
 
 	/* This function is called by the render function and is called on each game

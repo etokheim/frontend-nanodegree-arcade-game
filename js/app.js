@@ -1,7 +1,7 @@
 // Setup
 var debugging = {
 	"collision": {
-		"boolean": true,
+		"boolean": false,
 		"displayTarget": function(object) {
 			if(this.boolean) {
 				if(Object.prototype.toString.call( object ) === '[object Array]') {
@@ -30,6 +30,19 @@ var debugging = {
 		ctx.textAlign = "center";
 		ctx.textBaseline = "top";
 		ctx.fillText("Score: " + player.score, canvas.width / 2, 32);
+	},
+
+	"displayFinalScore": function() {
+		if(!timer.playAgain) {
+			var canvas = document.getElementsByTagName("canvas")[0];
+			ctx.fillStyle = "rgb(0, 0, 0)";
+			ctx.font = "50px Arial";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "top";
+			ctx.fillText("Final score: " + player.highScore, canvas.width / 2, canvas.height / 2 - 40);
+			ctx.font = "16px Arial";
+			ctx.fillText("Refresh page to play again! :)", canvas.width / 2, canvas.height / 2 + 20);
+		}
 	}
 },
 
@@ -39,7 +52,26 @@ var debugging = {
 		"padding": {
 			"top": 50
 		}
+	},
+
+	timer = {
+	"gameTime": 20,
+	"startTime": 0,
+	"time": 0,
+	"timing": false,
+	"playAgain": true,
+
+	"timeNow": function() {
+		this.time = Date.now();
+		return (this.time - this.startTime) / 1000;
+	},
+
+	"restartTimer": function() {
+		this.startTime = Date.now();
+		this.timing = true;
+
 	}
+};
 
 var enemyIndex = 0;
 
@@ -125,6 +157,7 @@ var Player = function() {
 	this.sprite = 'images/char-boy.png';
 
 	this.score = 0;
+	this.highScore = 0;
 
 	this.xSpeed = 101;
 	this.ySpeed = 83;
@@ -134,6 +167,8 @@ var Player = function() {
 		this.collisionY = this.defaultCollisionY;
 		this.y = this.defaultY;
 	}
+
+	this.movement = true;
 };
 
 
@@ -150,6 +185,31 @@ Player.prototype.update = function() {
 		player.score += 10;
 		player.resetPosition();
 	}
+
+	if(timer.timing) {
+		if (timer.timeNow() > timer.gameTime) {
+			if(confirm("Time's up! Your score: " + player.score + " - Well done!\n\nClick OK to play again, cancel to give up")) {
+				timer.timing = false;
+				player.resetPosition();
+
+				// Sets new high score if new record
+				if(player.score > player.highScore) {
+					player.highScore = player.score;
+				}
+
+				player.score = 0;
+			} else {
+				timer.timing = false;
+				player.resetPosition();
+				player.movement = false;
+				timer.playAgain = false;
+			}
+		}
+	} else {
+		if(timer.playAgain) {
+			timer.restartTimer();
+		}
+	}
 };
 
 Player.prototype.render = function() {
@@ -162,23 +222,25 @@ Player.prototype.render = function() {
 Player.prototype.handleInput = function(input) {
 	var canvas = document.getElementsByTagName("canvas")[0];
 
-	// if(input === "up" && this.collisionY - this.ySpeed > 0) {
-	if(input === "up") {
-		this.y -= this.ySpeed;
-		this.collisionY -= this.ySpeed;
-	}
+	if(player.movement) {
+		// if(input === "up" && this.collisionY - this.ySpeed > 0) {
+		if(input === "up") {
+			this.y -= this.ySpeed;
+			this.collisionY -= this.ySpeed;
+		}
 
-	if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
-		this.y += this.ySpeed;
-		this.collisionY += this.ySpeed;
-	}
+		if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
+			this.y += this.ySpeed;
+			this.collisionY += this.ySpeed;
+		}
 
-	if(input === "right" && this.x + this.xSpeed < canvas.width) {
-		this.x += this.xSpeed;
-	}
+		if(input === "right" && this.x + this.xSpeed < canvas.width) {
+			this.x += this.xSpeed;
+		}
 
-	if(input === "left" && this.x - this.xSpeed > -1) {
-		this.x -= this.xSpeed;
+		if(input === "left" && this.x - this.xSpeed > -1) {
+			this.x -= this.xSpeed;
+		}
 	}
 };
 
