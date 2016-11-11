@@ -60,16 +60,27 @@ var debugging = {
 	"time": 0,
 	"timing": false,
 	"playAgain": true,
+	"currentTime": 0,
 
 	"timeNow": function() {
-		this.time = Date.now();
-		return (this.time - this.startTime) / 1000;
+		if(timer.timing) {
+			this.time = Date.now();
+			this.currentTime = this.gameTime - (this.time - this.startTime) / 1000;
+			console.log(this.currentTime);
+		}
 	},
 
 	"restartTimer": function() {
 		this.startTime = Date.now();
 		this.timing = true;
+	},
 
+	"display": function() {
+		var canvas = document.getElementsByTagName("canvas")[0];
+		ctx.fillStyle = "rgb(0, 0, 0)";
+		ctx.font = "24px Arial";
+		ctx.textAlign = "left";
+		ctx.fillText("Time left: " + this.currentTime.toFixed(2), canvas.width / 2 - 75, canvas.height - 60);
 	}
 };
 
@@ -96,25 +107,15 @@ var Enemy = function() {
 	this.vx = 100 + Math.random()*100;
 	this.index = enemyIndex;
 	enemyIndex++;
+	this.newEnemyInterval = 25;
+	this.maxEnemies = 5;
 };
 
 var lastTime = Date.now();
 var storedAppDt = 0;
 
 Enemy.prototype.send = function() {
-	this.newEnemyInterval = 25;
-	this.maxEnemies = 5;
 
-	var now = Date.now(),
-		appDt = (now - lastTime) / 1000.0;
-
-	if(storedAppDt > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
-		allEnemies.push(new Enemy);
-
-		storedAppDt = 0;
-	} else {
-		storedAppDt++;
-	}
 }
 
 Enemy.prototype.update = function(dt, index) {
@@ -132,7 +133,18 @@ Enemy.prototype.update = function(dt, index) {
 
 	this.x += this.vx * dt;
 
+	var now = Date.now(),
+		appDt = (now - lastTime) / 1000;
+
+	if(storedAppDt > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
+		allEnemies.push(new Enemy);
+
+		storedAppDt = 0;
+	} else {
+		storedAppDt++;
+	}
 };
+
 
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
@@ -180,6 +192,7 @@ var allEnemies = [];
 
 var player = new Player();
 
+allEnemies.push(new Enemy);
 Player.prototype.update = function() {
 	if(player.collisionY < tiles.padding.top) {
 		player.score += 10;
@@ -187,20 +200,23 @@ Player.prototype.update = function() {
 	}
 
 	if(timer.timing) {
-		if (timer.timeNow() > timer.gameTime) {
+		// If times up:
+		if (timer.currentTime <= 0) {
+			// If new record, then sets new high score
+			if(player.score > player.highScore) {
+				player.highScore = player.score;
+			}
+
+			// Sets the timer before the confirm message - so it doesn't say -0.00
+			timer.timing = false;
+			timer.currentTime = 0.00;
+			timer.display();
+			player.resetPosition();
+
 			if(confirm("Time's up! Your score: " + player.score + " - Well done!\n\nClick OK to play again, cancel to give up")) {
-				timer.timing = false;
-				player.resetPosition();
-
 				// Sets new high score if new record
-				if(player.score > player.highScore) {
-					player.highScore = player.score;
-				}
-
 				player.score = 0;
 			} else {
-				timer.timing = false;
-				player.resetPosition();
 				player.movement = false;
 				timer.playAgain = false;
 			}

@@ -145,6 +145,8 @@ var Engine = (function(global) {
 
 		renderEntities();
 		scoreTable.render();
+		timer.timeNow();
+		timer.display();
 		scoreTable.displayFinalScore();
 	}
 
