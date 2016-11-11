@@ -107,7 +107,7 @@ font = {
 
 
 timer = {
-	"gameTime": 1,
+	"gameTime": 20,
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
