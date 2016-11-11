@@ -26,7 +26,7 @@ var Engine = (function(global) {
 		lastTime;
 
 	canvas.width = 505;
-	canvas.height = 606;
+	canvas.height = 626;
 	doc.body.appendChild(canvas);
 
 	/* This function serves as the kickoff point for the game loop itself
@@ -47,7 +47,6 @@ var Engine = (function(global) {
 		/* Call our update/render functions, pass along the time delta to
 		 * our update function since it may be used for smooth animation.
 		 */
-		Enemy.prototype.send();
 		update(dt);
 		render();
 
@@ -144,10 +143,10 @@ var Engine = (function(global) {
 		}
 
 		renderEntities();
-		scoreTable.render();
+		gameBoard.info.render();
 		timer.timeNow();
 		timer.display();
-		scoreTable.displayFinalScore();
+		gameBoard.info.displayFinalScore();
 	}
 
 	/* This function is called by the render function and is called on each game
@@ -191,4 +190,5 @@ var Engine = (function(global) {
 	 * from within their app.js files.
 	 */
 	global.ctx = ctx;
+	global.canvas = canvas
 })(this);

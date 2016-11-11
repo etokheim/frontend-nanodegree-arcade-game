@@ -1,52 +1,55 @@
-// Setup
-var debugging = {
-	"collision": {
-		"boolean": false,
-		"displayTarget": function(object) {
-			if(this.boolean) {
-				if(Object.prototype.toString.call( object ) === '[object Array]') {
-					for (var i = 0; i < object.length; i++) {
+/*--------------------------------------------------------------
+>>> TABLE OF CONTENTS:
+----------------------------------------------------------------
+# Setup
+# Enemy
+# Player
+# Collision checking
+--------------------------------------------------------------*/
+
+
+/*--------------------------------------------------------------
+# Setup
+--------------------------------------------------------------*/
+document.addEventListener('keydown', function(e) {
+	var allowedKeys = {
+		37: 'left',
+		38: 'up',
+		39: 'right',
+		40: 'down'
+	};
+
+	player.handleInput(allowedKeys[e.keyCode]);
+});
+
+var setup = {
+	"debugging": {
+		"collision": {
+			"boolean": false,
+			"displayCollisionArea": function(object) {
+				if(this.boolean) {
+					if(Object.prototype.toString.call( object ) === '[object Array]') {
+						for (var i = 0; i < object.length; i++) {
+							ctx.beginPath();
+							ctx.strokeStyle = "#FF0000";
+							ctx.rect(object[i].x, object[i].collisionY, object[i].width, object[i].height);
+							ctx.stroke();
+						}
+					} else {
 						ctx.beginPath();
 						ctx.strokeStyle = "#FF0000";
-						ctx.rect(object[i].x, object[i].collisionY, object[i].width, object[i].height);
+						ctx.rect(object.x, object.collisionY, object.width, object.height);
 						ctx.stroke();
 					}
-				} else {
-					ctx.beginPath();
-					ctx.strokeStyle = "#FF0000";
-					ctx.rect(object.x, object.collisionY, object.width, object.height);
-					ctx.stroke();
 				}
 			}
 		}
-	}
-},
-
-	scoreTable = {
-	"render": function() {
-		var canvas = document.getElementsByTagName("canvas")[0];
-		ctx.fillStyle = "rgb(0, 0, 0)";
-		ctx.font = "24px Arial";
-		ctx.textAlign = "center";
-		ctx.textBaseline = "top";
-		ctx.fillText("Score: " + player.score, canvas.width / 2, 32);
 	},
 
-	"displayFinalScore": function() {
-		if(!timer.playAgain) {
-			var canvas = document.getElementsByTagName("canvas")[0];
-			ctx.fillStyle = "rgb(0, 0, 0)";
-			ctx.font = "50px Arial";
-			ctx.textAlign = "center";
-			ctx.textBaseline = "top";
-			ctx.fillText("Final score: " + player.highScore, canvas.width / 2, canvas.height / 2 - 40);
-			ctx.font = "16px Arial";
-			ctx.fillText("Refresh page to play again! :)", canvas.width / 2, canvas.height / 2 + 20);
-		}
-	}
 },
 
-	tiles = {
+gameBoard = {
+	"tiles": {
 		"width": 101,
 		"height": 82,
 		"padding": {
@@ -54,8 +57,57 @@ var debugging = {
 		}
 	},
 
-	timer = {
-	"gameTime": 20,
+	"info": {
+		"scoreTable": function() {
+			var canvas = document.getElementsByTagName("canvas")[0];
+			ctx.fillStyle = "rgb(0, 0, 0)";
+			ctx.font = font.h2();
+			ctx.textAlign = "center";
+			ctx.fillText("Score: " + player.score, canvas.width / 2, font.size.h2);
+		},
+
+		"render": function() {
+			this.scoreTable();
+		},
+
+		"displayFinalScore": function() {
+			if(!timer.playAgain) {
+				var canvas = document.getElementsByTagName("canvas")[0];
+				ctx.fillStyle = "rgb(0, 0, 0)";
+				ctx.font = font.h1();
+				ctx.textAlign = "center";
+				ctx.fillText("Final score: " + player.highScore, canvas.width / 2, canvas.height / 2 - 40);
+				ctx.font = font.p();
+				ctx.fillText("Refresh page to play again! :)", canvas.width / 2, canvas.height / 2 + 20);
+			}
+		}
+	},
+},
+
+font = {
+	"family": "Arial",
+	"size": {
+		"default": 16,
+		"h1": 50,
+		"h2": 25,
+	},
+
+	"p": function() {
+		return this.size.default + "px " + this.family;
+	},
+
+	"h1": function() {
+		return this.size.h1 + "px " + this.family;
+	},
+
+	"h2": function() {
+		return this.size.h2 + "px " + this.family;
+	},
+},
+
+
+timer = {
+	"gameTime": 1,
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -66,7 +118,6 @@ var debugging = {
 		if(timer.timing) {
 			this.time = Date.now();
 			this.currentTime = this.gameTime - (this.time - this.startTime) / 1000;
-			console.log(this.currentTime);
 		}
 	},
 
@@ -80,48 +131,44 @@ var debugging = {
 		ctx.fillStyle = "rgb(0, 0, 0)";
 		ctx.font = "24px Arial";
 		ctx.textAlign = "left";
-		ctx.fillText("Time left: " + this.currentTime.toFixed(2), canvas.width / 2 - 75, canvas.height - 60);
+		ctx.fillText("Time left: " + this.currentTime.toFixed(2), canvas.width / 2 - 75, canvas.height - 10);
 	}
 };
 
+
+/*--------------------------------------------------------------
+# Enemy
+--------------------------------------------------------------*/
 var enemyIndex = 0;
 
-// Enemies our player must avoid
-var Enemy = function() {
-	// Variables applied to each of our instances go here,
-	// we've provided one for you to get started
+var lastTime = Date.now();
+var storedAppDt = 0;
 
+function Enemy() {
 	var canvas = document.getElementsByTagName("canvas")[0];
 
-	// The image/sprite for our enemies, this uses
-	// a helper we've provided to easily load images
+	// Utilizes resources.js to load image
 	this.sprite = 'images/enemy-bug.png';
 
 	this.width = 101;
 	this.height = 83;
 	this.x = 0 - this.width;
 	this.y = 53 + Math.floor(Math.random()*3) * this.height;
+
 	// Seems like a random number? It is, its the placement where
 	// i thought the the ladybugs would look best
 	this.collisionY = this.y + 82;
-	this.vx = 100 + Math.random()*100;
+
+	this.vx = 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
 	this.newEnemyInterval = 25;
 	this.maxEnemies = 5;
-};
-
-var lastTime = Date.now();
-var storedAppDt = 0;
-
-Enemy.prototype.send = function() {
 
 }
 
 Enemy.prototype.update = function(dt, index) {
-	// You should multiply any movement by the dt parameter
-	// which will ensure the game runs at the same speed for
-	// all computers.
+	// Multiplied by dt in order to ensure all computers play at the same speed
 
 	var canvas = document.getElementsByTagName("canvas")[0];
 
@@ -145,16 +192,18 @@ Enemy.prototype.update = function(dt, index) {
 	}
 };
 
-
-// Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
-	debugging.collision.displayTarget(allEnemies);
+	setup.debugging.collision.displayCollisionArea(allEnemies);
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-// Now write your own player class
-// This class requires an update(), render() and
-// a handleInput() method.
+var allEnemies = [];
+allEnemies.push(new Enemy);
+
+
+/*--------------------------------------------------------------
+# Player
+--------------------------------------------------------------*/
 var Player = function() {
 	this.x = 202;
 	this.defaultX = 202;
@@ -174,27 +223,18 @@ var Player = function() {
 	this.xSpeed = 101;
 	this.ySpeed = 83;
 
-	this.resetPosition = function() {
-		this.x = this.defaultX;
-		this.collisionY = this.defaultCollisionY;
-		this.y = this.defaultY;
-	}
 
 	this.movement = true;
 };
 
+Player.prototype.resetPosition = function() {
+	this.x = this.defaultX;
+	this.collisionY = this.defaultCollisionY;
+	this.y = this.defaultY;
+}
 
-
-// Now instantiate your objects.
-// Place all enemy objects in an array called allEnemies
-// Place the player object in a variable called player
-var allEnemies = [];
-
-var player = new Player();
-
-allEnemies.push(new Enemy);
 Player.prototype.update = function() {
-	if(player.collisionY < tiles.padding.top) {
+	if(player.collisionY < gameBoard.tiles.padding.top) {
 		player.score += 10;
 		player.resetPosition();
 	}
@@ -231,7 +271,7 @@ Player.prototype.update = function() {
 Player.prototype.render = function() {
 	var canvas = document.getElementsByTagName("canvas")[0];
 
-	debugging.collision.displayTarget(player);
+	setup.debugging.collision.displayCollisionArea(player);
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
@@ -260,21 +300,12 @@ Player.prototype.handleInput = function(input) {
 	}
 };
 
-
-// This listens for key presses and sends the keys to your
-// Player.handleInput() method. You don't need to modify this.
-document.addEventListener('keydown', function(e) {
-	var allowedKeys = {
-		37: 'left',
-		38: 'up',
-		39: 'right',
-		40: 'down'
-	};
-
-	player.handleInput(allowedKeys[e.keyCode]);
-});
+var player = new Player();
 
 
+/*--------------------------------------------------------------
+# Collision checking
+--------------------------------------------------------------*/
 var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
 		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
