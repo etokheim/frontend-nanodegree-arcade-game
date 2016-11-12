@@ -25,7 +25,7 @@ document.addEventListener('keydown', function(e) {
 var setup = {
 	"debugging": {
 		"collision": {
-			"boolean": false,
+			"boolean": true,
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
 					if(Object.prototype.toString.call( object ) === '[object Array]') {
@@ -38,7 +38,7 @@ var setup = {
 					} else {
 						ctx.beginPath();
 						ctx.strokeStyle = "#FF0000";
-						ctx.rect(object.x, object.collisionY, object.width, object.height);
+						ctx.rect(object.collisionX, object.collisionY, object.width, object.height);
 						ctx.stroke();
 					}
 				}
@@ -107,7 +107,7 @@ font = {
 
 
 timer = {
-	"gameTime": 20,
+	"gameTime": 99999999999,
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -150,22 +150,40 @@ function Enemy() {
 	// Utilizes resources.js to load image
 	this.sprite = 'images/enemy-bug.png';
 
-	this.width = 101;
-	this.height = 83;
+	this.width = 96;
+	this.height = 65;
 	this.x = 0 - this.width;
-	this.y = 53 + Math.floor(Math.random()*3) * this.height;
+	this.y = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
 
 	// Seems like a random number? It is, its the placement where
 	// i thought the the ladybugs would look best
 	this.collisionY = this.y + 82;
 
-	this.vx = 100 + Math.random() * 100;
+	this.vx = 2; // 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = 25;
+	this.newEnemyInterval = 250;
 	this.maxEnemies = 5;
-
+	this.moveInterval = 1000;
+	this.isMoving = false;
+	this.startMovingPosition = this.x;
+	this.lastMoveTime = Date.now();
 }
+
+Enemy.prototype.move = function(direction, multiplier) {
+	if(Date.now() - this.lastMoveTime > this.moveInterval) {
+		// console.log("More than a second since last time");
+		this.isMoving = true;
+		if(this.startMovingPosition + this.x - this.startMovingPosition > this.startMovingPosition + gameBoard.tiles.width) {
+			this.startMovingPosition = this.x;
+			this.isMoving = false;
+			this.lastMoveTime = Date.now();
+			console.log("HAVE MOVED ONE TILE!");
+		} else {
+			this.x += this.vx;
+		}
+	}
+};
 
 Enemy.prototype.update = function(dt, index) {
 	// Multiplied by dt in order to ensure all computers play at the same speed
@@ -178,7 +196,8 @@ Enemy.prototype.update = function(dt, index) {
 		allEnemies.splice(index, 1);
 	}
 
-	this.x += this.vx * dt;
+	// this.x += this.vx * dt;
+	this.move("x", 1);
 
 	var now = Date.now(),
 		appDt = (now - lastTime) / 1000;
@@ -207,14 +226,16 @@ allEnemies.push(new Enemy);
 var Player = function() {
 	this.x = 202;
 	this.defaultX = 202;
+	this.defaultCollisionX = this.x + 30;
+	this.collisionX = this.x + 30;
 
 	this.y = 375;
 	this.defaultY = 375;
 	// To offset the collision box
-	this.collisionY = this.y + 75 + 17;
-	this.defaultCollisionY = this.defaultY + 75 + 17;
-	this.width = 101;
-	this.height = 83;
+	this.collisionY = this.y + 75 + 17 + 25;
+	this.defaultCollisionY = this.defaultY + 75 + 17 + 25;
+	this.width = 45;
+	this.height = 30;
 	this.sprite = 'images/char-boy.png';
 
 	this.score = 0;
@@ -229,6 +250,7 @@ var Player = function() {
 
 Player.prototype.resetPosition = function() {
 	this.x = this.defaultX;
+	this.collisionX = this.defaultCollisionX;
 	this.collisionY = this.defaultCollisionY;
 	this.y = this.defaultY;
 }
@@ -292,10 +314,12 @@ Player.prototype.handleInput = function(input) {
 
 		if(input === "right" && this.x + this.xSpeed < canvas.width) {
 			this.x += this.xSpeed;
+			this.collisionX += this.xSpeed;
 		}
 
 		if(input === "left" && this.x - this.xSpeed > -1) {
 			this.x -= this.xSpeed;
+			this.collisionX -= this.xSpeed;
 		}
 	}
 };
@@ -308,7 +332,7 @@ var player = new Player();
 --------------------------------------------------------------*/
 var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
-		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
+		if (allEnemies[i].x + allEnemies[i].width > player.collisionX && allEnemies[i].x < player.collisionX + player.width &&
 			allEnemies[i].collisionY + allEnemies[i].height > player.collisionY && allEnemies[i].collisionY < player.collisionY + player.height) {
 			player.score -= 5;
 			player.resetPosition();
