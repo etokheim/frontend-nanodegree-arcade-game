@@ -265,6 +265,8 @@ var Player = function() {
 	this.movement = true;
 
 	startPosition = this.x;
+
+	this.nextMove = {};
 };
 
 Player.prototype.resetPosition = function() {
@@ -331,26 +333,30 @@ Player.prototype.animate = function(direction, multiplier) {
 	}
 
 
-	if(this.isMoving) {		
+	if(this.isMoving) {	
 		deltaPosition = this.startPosition - position;
 		if(Math.abs(deltaPosition) >= moveDistance) {
 			this.startPosition = position;
 			this.isMoving = false;
 			this.lastMoveTime = Date.now();
-			console.log("Stop animating player!");
+			// console.log("Stop animating player!");
 		} else {
 			// if move speed is say 15, the player will run more than 82 px (a tile) up!
 			position = (position + (moveDistance / 8) * multiplier2);
-			console.log(multiplier2 + "Animating player! this.startPosition = " + this.startPosition + ", position = " + position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
-			// position -= moveDistance / 8;
+			// console.log("Animating player! this.startPosition = " + this.startPosition + ", position = " + position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
 		}
 		if(direction2 === "y") {
-			this.collisionY = position;// * multiplier2;
-			this.y = (position - this.yDifferenceHitBoxAndDrawing);// * multiplier2;
+			this.collisionY = position;
+			this.y = (position - this.yDifferenceHitBoxAndDrawing);
 		} else {
-			this.collisionX = position;// * multiplier2;
-			this.x = (position - this.xDifferenceHitBoxAndDrawing);// * multiplier2;
+			this.collisionX = position;
+			this.x = (position - this.xDifferenceHitBoxAndDrawing);
 		}
+	}
+
+	// If a move has been queued - fire it!
+	if(this.nextMove.queued) {
+		this.move(this.nextMove.direction, this.nextMove.multiplier)
 	}
 }
 
@@ -358,15 +364,30 @@ var direction2, multiplier2;
 
 Player.prototype.move = function(direction, multiplier) {
 	console.log("moving player!");
-	this.isMoving = true;
-	direction2 = direction;
-	multiplier2 = multiplier;
-	
-	if(direction2 === "y") {
-		this.startPosition = this.collisionY;
-	} else {		
-		this.startPosition = this.collisionX;
+	if(!this.isMoving) {
+		console.log(this.isMoving);
+		this.isMoving = true;
+		direction2 = direction;
+		multiplier2 = multiplier;
+		if(direction2 === "y") {
+			this.startPosition = this.collisionY;
+		} else {		
+			this.startPosition = this.collisionX;
+		}
+
+		// If player doesn't move - this is not a queued move.
+		this.nextMove.queued = false;
+	} else {
+		// If player is moving - let player queue a move.
+		// This way the player doesn't have to wait till the animation
+		// to end before executing his next move.
+		this.nextMove = {
+			"direction": direction,
+			"multiplier": multiplier,
+			"queued": true
+		};
 	}
+	
 };
 
 Player.prototype.handleInput = function(input) {
