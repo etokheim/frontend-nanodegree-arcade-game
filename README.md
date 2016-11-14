@@ -1,8 +1,7 @@
 Frogger game
 ===============================
 
-As part of Udacity's nanodegree on front-end developement, I made a frogger game :)
-Please download and try it out!
+As part of Udacity's nanodegree on front-end developement, I made a frogger game - Please download and try it out! :)
 
 ## Attribution
 ### Visuals
