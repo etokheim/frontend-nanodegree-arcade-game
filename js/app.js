@@ -142,7 +142,10 @@ timer = {
 var enemyIndex = 0;
 
 var lastTime = Date.now();
-var storedAppDt = 0;
+// var dt = 0;
+var dt;
+var now;
+var timeSinceNewEnemy = 0;
 
 function Enemy() {
 	var canvas = document.getElementsByTagName("canvas")[0];
@@ -162,33 +165,41 @@ function Enemy() {
 	this.vx = 2; // 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = 250;
+	this.newEnemyInterval = 2;
 	this.maxEnemies = 5;
-	this.moveInterval = 1000;
+	this.moveInterval = 1000; // Value in seconds
 	this.isMoving = false;
-	this.startMovingPosition = this.x;
+	this.startPosition = this.x;
 	this.lastMoveTime = Date.now();
 }
 
 Enemy.prototype.move = function(direction, multiplier) {
 	if(Date.now() - this.lastMoveTime > this.moveInterval) {
-		// console.log("More than a second since last time");
 		this.isMoving = true;
-		if(this.startMovingPosition + this.x - this.startMovingPosition > this.startMovingPosition + gameBoard.tiles.width) {
-			this.startMovingPosition = this.x;
+		if(this.startPosition + this.x - this.startPosition > this.startPosition + gameBoard.tiles.width) {
+			this.startPosition = this.x;
 			this.isMoving = false;
 			this.lastMoveTime = Date.now();
-			console.log("HAVE MOVED ONE TILE!");
 		} else {
 			this.x += this.vx;
 		}
 	}
 };
 
+function EnemySpawner() {
+
+}
+
+EnemySpawner.prototype.send = function() {
+};
+
+
+// *** PROBLEM ***
+// The enemy.update function only runs if there is enemies in allEnemies array
+// Therefor the spawner CANNOT be embedded in this function! If there is no enemies
+// No new ones will spawn!!!
 Enemy.prototype.update = function(dt, index) {
 	// Multiplied by dt in order to ensure all computers play at the same speed
-
-	var canvas = document.getElementsByTagName("canvas")[0];
 
 	// Checks if this is out of bounds
 	if(this.x > canvas.width) {
@@ -199,16 +210,19 @@ Enemy.prototype.update = function(dt, index) {
 	// this.x += this.vx * dt;
 	this.move("x", 1);
 
-	var now = Date.now(),
-		appDt = (now - lastTime) / 1000;
+	now = Date.now(),
+	dt = (now - lastTime) / 1000.0;
+	// console.log(dt + ", and 2 * dt = " + 2*(dt+1));
 
-	if(storedAppDt > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
+	if(timeSinceNewEnemy > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
 		allEnemies.push(new Enemy);
 
-		storedAppDt = 0;
+		timeSinceNewEnemy = 0;
 	} else {
-		storedAppDt++;
+		timeSinceNewEnemy += dt;
 	}
+	// console.log(timeSinceNewEnemy + ", " + this.newEnemyInterval);
+	lastTime = Date.now();
 };
 
 Enemy.prototype.render = function() {
@@ -223,16 +237,19 @@ allEnemies.push(new Enemy);
 /*--------------------------------------------------------------
 # Player
 --------------------------------------------------------------*/
+// var Player.prototype = new Enemy;
 var Player = function() {
 	this.x = 202;
 	this.defaultX = 202;
 	this.defaultCollisionX = this.x + 30;
 	this.collisionX = this.x + 30;
+	this.xDifferenceHitBoxAndDrawing = this.collisionX - this.x;
 
 	this.y = 375;
 	this.defaultY = 375;
 	// To offset the collision box
 	this.collisionY = this.y + 75 + 17 + 25;
+	this.yDifferenceHitBoxAndDrawing = this.collisionY - this.y;
 	this.defaultCollisionY = this.defaultY + 75 + 17 + 25;
 	this.width = 45;
 	this.height = 30;
@@ -246,6 +263,8 @@ var Player = function() {
 
 
 	this.movement = true;
+
+	startPosition = this.x;
 };
 
 Player.prototype.resetPosition = function() {
@@ -253,6 +272,7 @@ Player.prototype.resetPosition = function() {
 	this.collisionX = this.defaultCollisionX;
 	this.collisionY = this.defaultCollisionY;
 	this.y = this.defaultY;
+	this.isMoving = false;
 }
 
 Player.prototype.update = function() {
@@ -288,6 +308,8 @@ Player.prototype.update = function() {
 			timer.restartTimer();
 		}
 	}
+
+	this.animate();
 };
 
 Player.prototype.render = function() {
@@ -297,29 +319,83 @@ Player.prototype.render = function() {
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
+Player.prototype.animate = function(direction, multiplier) {
+	var moveDistance;
+	var deltaPosition;
+	if(direction2 === "y") {
+		moveDistance = gameBoard.tiles.height;
+		position = this.collisionY;
+	} else {
+		moveDistance = gameBoard.tiles.width;
+		position = this.collisionX;
+	}
+
+
+	if(this.isMoving) {		
+		deltaPosition = this.startPosition - position;
+		if(Math.abs(deltaPosition) >= moveDistance) {
+			this.startPosition = position;
+			this.isMoving = false;
+			this.lastMoveTime = Date.now();
+			console.log("Stop animating player!");
+		} else {
+			// if move speed is say 15, the player will run more than 82 px (a tile) up!
+			position = (position + (moveDistance / 8) * multiplier2);
+			console.log(multiplier2 + "Animating player! this.startPosition = " + this.startPosition + ", position = " + position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
+			// position -= moveDistance / 8;
+		}
+		if(direction2 === "y") {
+			this.collisionY = position;// * multiplier2;
+			this.y = (position - this.yDifferenceHitBoxAndDrawing);// * multiplier2;
+		} else {
+			this.collisionX = position;// * multiplier2;
+			this.x = (position - this.xDifferenceHitBoxAndDrawing);// * multiplier2;
+		}
+	}
+}
+
+var direction2, multiplier2;
+
+Player.prototype.move = function(direction, multiplier) {
+	console.log("moving player!");
+	this.isMoving = true;
+	direction2 = direction;
+	multiplier2 = multiplier;
+	
+	if(direction2 === "y") {
+		this.startPosition = this.collisionY;
+	} else {		
+		this.startPosition = this.collisionX;
+	}
+};
+
 Player.prototype.handleInput = function(input) {
 	var canvas = document.getElementsByTagName("canvas")[0];
 
 	if(player.movement) {
 		// if(input === "up" && this.collisionY - this.ySpeed > 0) {
 		if(input === "up") {
-			this.y -= this.ySpeed;
-			this.collisionY -= this.ySpeed;
+			// this.y -= this.ySpeed;
+			// this.collisionY -= this.ySpeed;
+			this.move("y", -1)
 		}
 
 		if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
-			this.y += this.ySpeed;
-			this.collisionY += this.ySpeed;
+			// this.y += this.ySpeed;
+			// this.collisionY += this.ySpeed;
+			this.move("y", 1)
 		}
 
 		if(input === "right" && this.x + this.xSpeed < canvas.width) {
-			this.x += this.xSpeed;
-			this.collisionX += this.xSpeed;
+			// this.x += this.xSpeed;
+			// this.collisionX += this.xSpeed;
+			this.move("x", 1)
 		}
 
 		if(input === "left" && this.x - this.xSpeed > -1) {
-			this.x -= this.xSpeed;
-			this.collisionX -= this.xSpeed;
+			// this.x -= this.xSpeed;
+			// this.collisionX -= this.xSpeed;
+			this.move("x", -1)
 		}
 	}
 };
