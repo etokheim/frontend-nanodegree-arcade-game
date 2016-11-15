@@ -26,20 +26,21 @@ document.addEventListener('keydown', function(e) {
 var setup = {
 	"debugging": {
 		"collision": {
-			"boolean": true,
+			"boolean": false,
+
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
 					if(Object.prototype.toString.call( object ) === '[object Array]') {
 						for (var i = 0; i < object.length; i++) {
 							ctx.beginPath();
 							ctx.strokeStyle = "#FF0000";
-							ctx.rect(object[i].x, object[i].collisionY, object[i].width, object[i].height);
+							ctx.rect(object[i].x, object[i].y, object[i].width, object[i].height);
 							ctx.stroke();
 						}
 					} else {
 						ctx.beginPath();
 						ctx.strokeStyle = "#FF0000";
-						ctx.rect(object.collisionX, object.collisionY, object.width, object.height);
+						ctx.rect(object.x, object.y, object.width, object.height);
 						ctx.stroke();
 					}
 				}
@@ -106,7 +107,7 @@ font = {
 
 
 timer = {
-	"gameTime": 20,
+	"gameTime": 20, // In seconds
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -139,23 +140,17 @@ timer = {
 --------------------------------------------------------------*/
 function MovableObject() {
 	this.description = {
-		"userControlled": false,
-	}
-
-	this.test = function() {
-		console.log("This is shape talking!");
-		return "This is shape talking!";
+		"userControlled": false, // Sets default value
 	}
 
 	this.moving = {
+		"isMoving": false,
 		"direction": "", // x or y
 		"position": 0,
-		"multiplier": 1
+		"multiplier": 1 // 1 or -1 - inverts moving direction
 	}
 
 	this.nextMove = {};
-
-
 }
 
 // This functions runs (all the time) from ###.prototype.update()
@@ -165,9 +160,9 @@ MovableObject.prototype.move = function(direction, multiplier) {
 		this.moving.direction = direction;
 		this.moving.multiplier = multiplier;
 		if(this.moving.direction === "y") {
-			this.startPosition = this.collisionY;
+			this.startPosition = this.y;
 		} else {		
-			this.startPosition = this.collisionX;
+			this.startPosition = this.x;
 		}
 
 		// If player doesn't move - this is not a queued move.
@@ -192,10 +187,10 @@ MovableObject.prototype.animate = function() {
 	
 	if(this.moving.direction === "y") {
 		moveDistance = gameBoard.tiles.height;
-		this.moving.position = this.collisionY;
+		this.moving.position = this.y;
 	} else {
 		moveDistance = gameBoard.tiles.width;
-		this.moving.position = this.collisionX;
+		this.moving.position = this.x;
 	}
 
 	if(this.isMoving) {	
@@ -212,11 +207,11 @@ MovableObject.prototype.animate = function() {
 		}
 
 		if(this.moving.direction === "y") {
-			this.collisionY = this.moving.position;
-			this.y = (this.moving.position - this.yDifferenceHitBoxAndDrawing);
+			this.y = this.moving.position;
+			this.spriteOffsetY = (this.moving.position - this.spriteOffsetYDifferenceHitBoxAndDrawing);
 		} else {
-			this.collisionX = this.moving.position;
-			this.x = (this.moving.position - this.xDifferenceHitBoxAndDrawing);
+			this.x = this.moving.position;
+			this.spriteOffsetX = (this.moving.position - this.spriteOffsetXDifferenceHitBoxAndDrawing);
 		}
 	}
 
@@ -232,7 +227,6 @@ MovableObject.prototype.animate = function() {
 var enemyIndex = 0;
 
 var lastTime = Date.now();
-// var dt = 0;
 var dt;
 var now;
 var timeSinceNewEnemy = 0;
@@ -244,25 +238,26 @@ function Enemy() {
 
 	this.width = 96;
 	this.height = 65;
-	this.x = 0 - this.width;
-	this.collisionX = this.x;
-	this.xDifferenceHitBoxAndDrawing = this.collisionX - this.x;
 
-	this.y = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
+	this.spriteOffsetX = 0 - this.width;
+	this.x = this.spriteOffsetX;
+	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	// Seems like a random number? It is, its the placement where
-	// i thought the the ladybugs would look best
-	this.collisionY = this.y + 82;
-	this.yDifferenceHitBoxAndDrawing = this.collisionY - this.y;
+	this.spriteOffsetY = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
+
+	// Seems like a random number? It is, it's the placement where
+	// I thought the the ladybugs would look best
+	this.y = this.spriteOffsetY + 82;
+	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
 
 	this.vx = 2; // 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
 	this.newEnemyInterval = 2; // Value in seconds
 	this.maxEnemies = 5;
-	this.moveInterval = 1000;
+	this.moveInterval = 1000; // Value in milli seconds
 	this.isMoving = false;
-	this.startPosition = this.x;
+	this.startPosition = this.spriteOffsetX;
 	this.lastMoveTime = Date.now();
 }
 
@@ -281,7 +276,7 @@ Enemy.prototype.update = function(dt, index) {
 	// Multiplied by dt in order to ensure all computers play at the same speed
 
 	// Checks if this is out of bounds
-	if(this.x > canvas.width) {
+	if(this.spriteOffsetX > canvas.width) {
 		// If out of bouds, then deletes the element.
 		allEnemies.splice(index, 1);
 	}
@@ -296,12 +291,12 @@ Enemy.prototype.update = function(dt, index) {
 	} else {
 		timeSinceNewEnemy += dt;
 	}
-	// console.log(timeSinceNewEnemy + ", " + this.newEnemyInterval);
+
 	lastTime = Date.now();
 
 	this.animate();
 
-	if(Date.now() - this.lastMoveTime > this.moveInterval) {
+	if(Date.now() - this.lastMoveTime >= this.moveInterval) {
 		this.move("x", 1);
 		
 	}
@@ -309,7 +304,7 @@ Enemy.prototype.update = function(dt, index) {
 
 Enemy.prototype.render = function() {
 	setup.debugging.collision.displayCollisionArea(allEnemies);
-	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
 };
 
 var allEnemies = [];
@@ -322,46 +317,42 @@ allEnemies.push(new Enemy);
 --------------------------------------------------------------*/
 Player.prototype = new MovableObject();
 function Player() {
-	this.x = 202;
+	this.spriteOffsetX = 202;
 	this.defaultX = 202;
-	this.defaultCollisionX = this.x + 30;
-	this.collisionX = this.x + 30;
-	this.xDifferenceHitBoxAndDrawing = this.collisionX - this.x;
+	this.defaultX = this.spriteOffsetX + 30;
+	this.x = this.spriteOffsetX + 30;
+	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	this.y = 375;
+	this.spriteOffsetY = 375;
 	this.defaultY = 375;
 	// To offset the collision box
-	this.collisionY = this.y + 75 + 17 + 25;
-	this.yDifferenceHitBoxAndDrawing = this.collisionY - this.y;
-	this.defaultCollisionY = this.defaultY + 75 + 17 + 25;
+	this.y = this.spriteOffsetY + 75 + 17 + 25;
+	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
+	this.defaultY = this.defaultY + 75 + 17 + 25;
 	this.width = 45;
 	this.height = 30;
 	this.sprite = 'images/char-boy.png';
 
+	this.spriteOffsetXSpeed = 101;
+	this.spriteOffsetYSpeed = 83;
+
+	// Player attributes
+	this.description.userControlled = true;
+	this.movement = true;
 	this.score = 0;
 	this.highScore = 0;
-
-	this.xSpeed = 101;
-	this.ySpeed = 83;
-
-
-	this.movement = true;
-
-	startPosition = this.x;
-
-	this.description.userControlled = true;
 };
 
 Player.prototype.resetPosition = function() {
+	this.spriteOffsetX = this.defaultX - this.spriteOffsetXDifferenceHitBoxAndDrawing;
 	this.x = this.defaultX;
-	this.collisionX = this.defaultCollisionX;
-	this.collisionY = this.defaultCollisionY;
 	this.y = this.defaultY;
+	this.spriteOffsetY = this.defaultY - this.spriteOffsetYDifferenceHitBoxAndDrawing;
 	this.isMoving = false;
 }
 
 Player.prototype.update = function() {
-	if(player.collisionY < gameBoard.tiles.padding.top) {
+	if(player.y < gameBoard.tiles.padding.top) {
 		player.score += 10;
 		player.resetPosition();
 	}
@@ -398,9 +389,8 @@ Player.prototype.update = function() {
 };
 
 Player.prototype.render = function() {
-
 	setup.debugging.collision.displayCollisionArea(player);
-	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
 };
 
 
@@ -411,15 +401,15 @@ Player.prototype.handleInput = function(input) {
 			this.move("y", -1)
 		}
 
-		if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
+		if(input === "down" && this.y + this.spriteOffsetYSpeed < canvas.height - 138) {
 			this.move("y", 1)
 		}
 
-		if(input === "right" && this.x + this.xSpeed < canvas.width) {
+		if(input === "right" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width) {
 			this.move("x", 1)
 		}
 
-		if(input === "left" && this.x - this.xSpeed > -1) {
+		if(input === "left" && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
 			this.move("x", -1)
 		}
 	}
@@ -433,8 +423,8 @@ var player = new Player();
 --------------------------------------------------------------*/
 var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
-		if (allEnemies[i].x + allEnemies[i].width > player.collisionX && allEnemies[i].x < player.collisionX + player.width &&
-			allEnemies[i].collisionY + allEnemies[i].height > player.collisionY && allEnemies[i].collisionY < player.collisionY + player.height) {
+		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
+			allEnemies[i].y + allEnemies[i].height > player.y && allEnemies[i].y < player.y + player.height) {
 			player.score -= 5;
 			player.resetPosition();
 		}
