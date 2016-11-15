@@ -2,6 +2,7 @@
 >>> TABLE OF CONTENTS:
 ----------------------------------------------------------------
 # Setup
+# Abillities
 # Enemy
 # Player
 # Collision checking
@@ -59,7 +60,6 @@ gameBoard = {
 
 	"info": {
 		"scoreTable": function() {
-			var canvas = document.getElementsByTagName("canvas")[0];
 			ctx.fillStyle = "rgb(0, 0, 0)";
 			ctx.font = font.h2();
 			ctx.textAlign = "center";
@@ -72,7 +72,6 @@ gameBoard = {
 
 		"displayFinalScore": function() {
 			if(!timer.playAgain) {
-				var canvas = document.getElementsByTagName("canvas")[0];
 				ctx.fillStyle = "rgb(0, 0, 0)";
 				ctx.font = font.h1();
 				ctx.textAlign = "center";
@@ -107,7 +106,7 @@ font = {
 
 
 timer = {
-	"gameTime": 99999999999,
+	"gameTime": 20,
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -127,7 +126,6 @@ timer = {
 	},
 
 	"display": function() {
-		var canvas = document.getElementsByTagName("canvas")[0];
 		ctx.fillStyle = "rgb(0, 0, 0)";
 		ctx.font = "24px Arial";
 		ctx.textAlign = "left";
@@ -135,6 +133,98 @@ timer = {
 	}
 };
 
+
+/*--------------------------------------------------------------
+# Abillities
+--------------------------------------------------------------*/
+function MovableObject() {
+	this.description = {
+		"userControlled": false,
+	}
+
+	this.test = function() {
+		console.log("This is shape talking!");
+		return "This is shape talking!";
+	}
+
+	this.moving = {
+		"direction": "", // x or y
+		"position": 0,
+		"multiplier": 1
+	}
+
+	this.nextMove = {};
+
+
+}
+
+// This functions runs (all the time) from ###.prototype.update()
+MovableObject.prototype.move = function(direction, multiplier) {
+	if(!this.isMoving) {
+		this.isMoving = true;
+		this.moving.direction = direction;
+		this.moving.multiplier = multiplier;
+		if(this.moving.direction === "y") {
+			this.startPosition = this.collisionY;
+		} else {		
+			this.startPosition = this.collisionX;
+		}
+
+		// If player doesn't move - this is not a queued move.
+		this.nextMove.queued = false;
+	} else {
+		// If player is moving - let player queue a move.
+		// This way the player doesn't have to wait till the animation
+		// to end before executing his next move.
+		if(this.description.userControlled) {
+			this.nextMove = {
+				"direction": direction,
+				"multiplier": multiplier,
+				"queued": true
+			}
+		}
+	}
+};
+
+MovableObject.prototype.animate = function() {
+	var moveDistance;
+	var deltaPosition;
+	
+	if(this.moving.direction === "y") {
+		moveDistance = gameBoard.tiles.height;
+		this.moving.position = this.collisionY;
+	} else {
+		moveDistance = gameBoard.tiles.width;
+		this.moving.position = this.collisionX;
+	}
+
+	if(this.isMoving) {	
+		deltaPosition = this.startPosition - this.moving.position;
+		if(Math.abs(deltaPosition) >= moveDistance) {
+			this.startPosition = this.moving.position;
+			this.isMoving = false;
+			this.lastMoveTime = Date.now();
+			// console.log("Stop animating player!");
+		} else {
+			// if move speed is say 15, the player will run more than 82 px (a tile) up!
+			this.moving.position = (this.moving.position + (moveDistance / 8) * this.moving.multiplier);
+			// console.log("Animating! Direction = " + this.moving.direction + ", this.startPosition = " + this.startPosition + ", position = " + this.moving.position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
+		}
+
+		if(this.moving.direction === "y") {
+			this.collisionY = this.moving.position;
+			this.y = (this.moving.position - this.yDifferenceHitBoxAndDrawing);
+		} else {
+			this.collisionX = this.moving.position;
+			this.x = (this.moving.position - this.xDifferenceHitBoxAndDrawing);
+		}
+	}
+
+	// If a move has been queued - fire it!
+	if(this.nextMove.queued) {
+		this.move(this.nextMove.direction, this.nextMove.multiplier)
+	}
+}
 
 /*--------------------------------------------------------------
 # Enemy
@@ -147,44 +237,34 @@ var dt;
 var now;
 var timeSinceNewEnemy = 0;
 
+Enemy.prototype = new MovableObject();
 function Enemy() {
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	// Utilizes resources.js to load image
 	this.sprite = 'images/enemy-bug.png';
 
 	this.width = 96;
 	this.height = 65;
 	this.x = 0 - this.width;
+	this.collisionX = this.x;
+	this.xDifferenceHitBoxAndDrawing = this.collisionX - this.x;
+
 	this.y = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
 
 	// Seems like a random number? It is, its the placement where
 	// i thought the the ladybugs would look best
 	this.collisionY = this.y + 82;
+	this.yDifferenceHitBoxAndDrawing = this.collisionY - this.y;
 
 	this.vx = 2; // 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = 2;
+	this.newEnemyInterval = 2; // Value in seconds
 	this.maxEnemies = 5;
-	this.moveInterval = 1000; // Value in seconds
+	this.moveInterval = 1000;
 	this.isMoving = false;
 	this.startPosition = this.x;
 	this.lastMoveTime = Date.now();
 }
-
-Enemy.prototype.move = function(direction, multiplier) {
-	if(Date.now() - this.lastMoveTime > this.moveInterval) {
-		this.isMoving = true;
-		if(this.startPosition + this.x - this.startPosition > this.startPosition + gameBoard.tiles.width) {
-			this.startPosition = this.x;
-			this.isMoving = false;
-			this.lastMoveTime = Date.now();
-		} else {
-			this.x += this.vx;
-		}
-	}
-};
 
 function EnemySpawner() {
 
@@ -192,7 +272,6 @@ function EnemySpawner() {
 
 EnemySpawner.prototype.send = function() {
 };
-
 
 // *** PROBLEM ***
 // The enemy.update function only runs if there is enemies in allEnemies array
@@ -207,12 +286,8 @@ Enemy.prototype.update = function(dt, index) {
 		allEnemies.splice(index, 1);
 	}
 
-	// this.x += this.vx * dt;
-	this.move("x", 1);
-
 	now = Date.now(),
 	dt = (now - lastTime) / 1000.0;
-	// console.log(dt + ", and 2 * dt = " + 2*(dt+1));
 
 	if(timeSinceNewEnemy > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
 		allEnemies.push(new Enemy);
@@ -223,6 +298,13 @@ Enemy.prototype.update = function(dt, index) {
 	}
 	// console.log(timeSinceNewEnemy + ", " + this.newEnemyInterval);
 	lastTime = Date.now();
+
+	this.animate();
+
+	if(Date.now() - this.lastMoveTime > this.moveInterval) {
+		this.move("x", 1);
+		
+	}
 };
 
 Enemy.prototype.render = function() {
@@ -232,13 +314,14 @@ Enemy.prototype.render = function() {
 
 var allEnemies = [];
 allEnemies.push(new Enemy);
+	allEnemies[0].move("x", 1);
 
 
 /*--------------------------------------------------------------
 # Player
 --------------------------------------------------------------*/
-// var Player.prototype = new Enemy;
-var Player = function() {
+Player.prototype = new MovableObject();
+function Player() {
 	this.x = 202;
 	this.defaultX = 202;
 	this.defaultCollisionX = this.x + 30;
@@ -266,7 +349,7 @@ var Player = function() {
 
 	startPosition = this.x;
 
-	this.nextMove = {};
+	this.description.userControlled = true;
 };
 
 Player.prototype.resetPosition = function() {
@@ -315,107 +398,28 @@ Player.prototype.update = function() {
 };
 
 Player.prototype.render = function() {
-	var canvas = document.getElementsByTagName("canvas")[0];
 
 	setup.debugging.collision.displayCollisionArea(player);
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-Player.prototype.animate = function(direction, multiplier) {
-	var moveDistance;
-	var deltaPosition;
-	if(direction2 === "y") {
-		moveDistance = gameBoard.tiles.height;
-		position = this.collisionY;
-	} else {
-		moveDistance = gameBoard.tiles.width;
-		position = this.collisionX;
-	}
 
-
-	if(this.isMoving) {	
-		deltaPosition = this.startPosition - position;
-		if(Math.abs(deltaPosition) >= moveDistance) {
-			this.startPosition = position;
-			this.isMoving = false;
-			this.lastMoveTime = Date.now();
-			// console.log("Stop animating player!");
-		} else {
-			// if move speed is say 15, the player will run more than 82 px (a tile) up!
-			position = (position + (moveDistance / 8) * multiplier2);
-			// console.log("Animating player! this.startPosition = " + this.startPosition + ", position = " + position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
-		}
-		if(direction2 === "y") {
-			this.collisionY = position;
-			this.y = (position - this.yDifferenceHitBoxAndDrawing);
-		} else {
-			this.collisionX = position;
-			this.x = (position - this.xDifferenceHitBoxAndDrawing);
-		}
-	}
-
-	// If a move has been queued - fire it!
-	if(this.nextMove.queued) {
-		this.move(this.nextMove.direction, this.nextMove.multiplier)
-	}
-}
-
-var direction2, multiplier2;
-
-Player.prototype.move = function(direction, multiplier) {
-	console.log("moving player!");
-	if(!this.isMoving) {
-		console.log(this.isMoving);
-		this.isMoving = true;
-		direction2 = direction;
-		multiplier2 = multiplier;
-		if(direction2 === "y") {
-			this.startPosition = this.collisionY;
-		} else {		
-			this.startPosition = this.collisionX;
-		}
-
-		// If player doesn't move - this is not a queued move.
-		this.nextMove.queued = false;
-	} else {
-		// If player is moving - let player queue a move.
-		// This way the player doesn't have to wait till the animation
-		// to end before executing his next move.
-		this.nextMove = {
-			"direction": direction,
-			"multiplier": multiplier,
-			"queued": true
-		};
-	}
-	
-};
 
 Player.prototype.handleInput = function(input) {
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	if(player.movement) {
-		// if(input === "up" && this.collisionY - this.ySpeed > 0) {
 		if(input === "up") {
-			// this.y -= this.ySpeed;
-			// this.collisionY -= this.ySpeed;
 			this.move("y", -1)
 		}
 
 		if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
-			// this.y += this.ySpeed;
-			// this.collisionY += this.ySpeed;
 			this.move("y", 1)
 		}
 
 		if(input === "right" && this.x + this.xSpeed < canvas.width) {
-			// this.x += this.xSpeed;
-			// this.collisionX += this.xSpeed;
 			this.move("x", 1)
 		}
 
 		if(input === "left" && this.x - this.xSpeed > -1) {
-			// this.x -= this.xSpeed;
-			// this.collisionX -= this.xSpeed;
 			this.move("x", -1)
 		}
 	}
