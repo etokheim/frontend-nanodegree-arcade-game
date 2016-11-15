@@ -2,6 +2,7 @@
 >>> TABLE OF CONTENTS:
 ----------------------------------------------------------------
 # Setup
+# Abillities
 # Enemy
 # Player
 # Collision checking
@@ -26,19 +27,20 @@ var setup = {
 	"debugging": {
 		"collision": {
 			"boolean": false,
+
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
 					if(Object.prototype.toString.call( object ) === '[object Array]') {
 						for (var i = 0; i < object.length; i++) {
 							ctx.beginPath();
 							ctx.strokeStyle = "#FF0000";
-							ctx.rect(object[i].x, object[i].collisionY, object[i].width, object[i].height);
+							ctx.rect(object[i].x, object[i].y, object[i].width, object[i].height);
 							ctx.stroke();
 						}
 					} else {
 						ctx.beginPath();
 						ctx.strokeStyle = "#FF0000";
-						ctx.rect(object.x, object.collisionY, object.width, object.height);
+						ctx.rect(object.x, object.y, object.width, object.height);
 						ctx.stroke();
 					}
 				}
@@ -59,7 +61,6 @@ gameBoard = {
 
 	"info": {
 		"scoreTable": function() {
-			var canvas = document.getElementsByTagName("canvas")[0];
 			ctx.fillStyle = "rgb(0, 0, 0)";
 			ctx.font = font.h2();
 			ctx.textAlign = "center";
@@ -72,7 +73,6 @@ gameBoard = {
 
 		"displayFinalScore": function() {
 			if(!timer.playAgain) {
-				var canvas = document.getElementsByTagName("canvas")[0];
 				ctx.fillStyle = "rgb(0, 0, 0)";
 				ctx.font = font.h1();
 				ctx.textAlign = "center";
@@ -107,7 +107,7 @@ font = {
 
 
 timer = {
-	"gameTime": 20,
+	"gameTime": 20, // In seconds
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -127,7 +127,6 @@ timer = {
 	},
 
 	"display": function() {
-		var canvas = document.getElementsByTagName("canvas")[0];
 		ctx.fillStyle = "rgb(0, 0, 0)";
 		ctx.font = "24px Arial";
 		ctx.textAlign = "left";
@@ -137,104 +136,223 @@ timer = {
 
 
 /*--------------------------------------------------------------
+# Abillities
+--------------------------------------------------------------*/
+function MovableObject() {
+	this.description = {
+		"userControlled": false, // Sets default value
+	}
+
+	this.moving = {
+		"isMoving": false,
+		"direction": "", // x or y
+		"position": 0,
+		"multiplier": 1 // 1 or -1 - inverts moving direction
+	}
+
+	this.nextMove = {};
+}
+
+// This functions runs (all the time) from ###.prototype.update()
+MovableObject.prototype.move = function(direction, multiplier) {
+	if(!this.isMoving) {
+		this.isMoving = true;
+		this.moving.direction = direction;
+		this.moving.multiplier = multiplier;
+		if(this.moving.direction === "y") {
+			this.startPosition = this.y;
+		} else {		
+			this.startPosition = this.x;
+		}
+
+		// If player doesn't move - this is not a queued move.
+		this.nextMove.queued = false;
+	} else {
+		// If player is moving - let player queue a move.
+		// This way the player doesn't have to wait till the animation
+		// to end before executing his next move.
+		if(this.description.userControlled) {
+			this.nextMove = {
+				"direction": direction,
+				"multiplier": multiplier,
+				"queued": true
+			}
+		}
+	}
+};
+
+MovableObject.prototype.animate = function() {
+	var moveDistance;
+	var deltaPosition;
+	
+	if(this.moving.direction === "y") {
+		moveDistance = gameBoard.tiles.height;
+		this.moving.position = this.y;
+	} else {
+		moveDistance = gameBoard.tiles.width;
+		this.moving.position = this.x;
+	}
+
+	if(this.isMoving) {	
+		deltaPosition = this.startPosition - this.moving.position;
+		if(Math.abs(deltaPosition) >= moveDistance) {
+			this.startPosition = this.moving.position;
+			this.isMoving = false;
+			this.lastMoveTime = Date.now();
+			// console.log("Stop animating player!");
+		} else {
+			// if move speed is say 15, the player will run more than 82 px (a tile) up!
+			this.moving.position = (this.moving.position + (moveDistance / 8) * this.moving.multiplier);
+			// console.log("Animating! Direction = " + this.moving.direction + ", this.startPosition = " + this.startPosition + ", position = " + this.moving.position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
+		}
+
+		if(this.moving.direction === "y") {
+			this.y = this.moving.position;
+			this.spriteOffsetY = (this.moving.position - this.spriteOffsetYDifferenceHitBoxAndDrawing);
+		} else {
+			this.x = this.moving.position;
+			this.spriteOffsetX = (this.moving.position - this.spriteOffsetXDifferenceHitBoxAndDrawing);
+		}
+	}
+
+	// If a move has been queued - fire it!
+	if(this.nextMove.queued) {
+		this.move(this.nextMove.direction, this.nextMove.multiplier)
+	}
+}
+
+/*--------------------------------------------------------------
 # Enemy
 --------------------------------------------------------------*/
 var enemyIndex = 0;
 
 var lastTime = Date.now();
-var storedAppDt = 0;
+var dt;
+var now;
+var timeSinceNewEnemy = 0;
 
+Enemy.prototype = new MovableObject();
 function Enemy() {
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	// Utilizes resources.js to load image
 	this.sprite = 'images/enemy-bug.png';
 
-	this.width = 101;
-	this.height = 83;
-	this.x = 0 - this.width;
-	this.y = 53 + Math.floor(Math.random()*3) * this.height;
+	this.width = 96;
+	this.height = 65;
 
-	// Seems like a random number? It is, its the placement where
-	// i thought the the ladybugs would look best
-	this.collisionY = this.y + 82;
+	this.spriteOffsetX = 0 - this.width;
+	this.x = this.spriteOffsetX;
+	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	this.vx = 100 + Math.random() * 100;
+	this.spriteOffsetY = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
+
+	// Seems like a random number? It is, it's the placement where
+	// I thought the the ladybugs would look best
+	this.y = this.spriteOffsetY + 82;
+	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
+
+	this.vx = 2; // 100 + Math.random() * 100;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = 25;
+	this.newEnemyInterval = 2; // Value in seconds
 	this.maxEnemies = 5;
+	this.moveInterval = 1000; // Value in milli seconds
+	this.isMoving = false;
+	this.startPosition = this.spriteOffsetX;
+	this.lastMoveTime = Date.now();
+}
+
+function EnemySpawner() {
 
 }
 
+EnemySpawner.prototype.send = function() {
+};
+
+// *** PROBLEM ***
+// The enemy.update function only runs if there is enemies in allEnemies array
+// Therefor the spawner CANNOT be embedded in this function! If there is no enemies
+// No new ones will spawn!!!
 Enemy.prototype.update = function(dt, index) {
 	// Multiplied by dt in order to ensure all computers play at the same speed
 
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	// Checks if this is out of bounds
-	if(this.x > canvas.width) {
+	if(this.spriteOffsetX > canvas.width) {
 		// If out of bouds, then deletes the element.
 		allEnemies.splice(index, 1);
 	}
 
-	this.x += this.vx * dt;
+	now = Date.now(),
+	dt = (now - lastTime) / 1000.0;
 
-	var now = Date.now(),
-		appDt = (now - lastTime) / 1000;
-
-	if(storedAppDt > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
+	if(timeSinceNewEnemy > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
 		allEnemies.push(new Enemy);
 
-		storedAppDt = 0;
+		timeSinceNewEnemy = 0;
 	} else {
-		storedAppDt++;
+		timeSinceNewEnemy += dt;
+	}
+
+	lastTime = Date.now();
+
+	this.animate();
+
+	if(Date.now() - this.lastMoveTime >= this.moveInterval) {
+		this.move("x", 1);
+		
 	}
 };
 
 Enemy.prototype.render = function() {
 	setup.debugging.collision.displayCollisionArea(allEnemies);
-	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
 };
 
 var allEnemies = [];
 allEnemies.push(new Enemy);
+	allEnemies[0].move("x", 1);
 
 
 /*--------------------------------------------------------------
 # Player
 --------------------------------------------------------------*/
-var Player = function() {
-	this.x = 202;
+Player.prototype = new MovableObject();
+function Player() {
+	this.spriteOffsetX = 202;
 	this.defaultX = 202;
+	this.defaultX = this.spriteOffsetX + 30;
+	this.x = this.spriteOffsetX + 30;
+	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	this.y = 375;
+	this.spriteOffsetY = 375;
 	this.defaultY = 375;
 	// To offset the collision box
-	this.collisionY = this.y + 75 + 17;
-	this.defaultCollisionY = this.defaultY + 75 + 17;
-	this.width = 101;
-	this.height = 83;
+	this.y = this.spriteOffsetY + 75 + 17 + 25;
+	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
+	this.defaultY = this.defaultY + 75 + 17 + 25;
+	this.width = 45;
+	this.height = 30;
 	this.sprite = 'images/char-boy.png';
 
+	this.spriteOffsetXSpeed = 101;
+	this.spriteOffsetYSpeed = 83;
+
+	// Player attributes
+	this.description.userControlled = true;
+	this.movement = true;
 	this.score = 0;
 	this.highScore = 0;
-
-	this.xSpeed = 101;
-	this.ySpeed = 83;
-
-
-	this.movement = true;
 };
 
 Player.prototype.resetPosition = function() {
+	this.spriteOffsetX = this.defaultX - this.spriteOffsetXDifferenceHitBoxAndDrawing;
 	this.x = this.defaultX;
-	this.collisionY = this.defaultCollisionY;
 	this.y = this.defaultY;
+	this.spriteOffsetY = this.defaultY - this.spriteOffsetYDifferenceHitBoxAndDrawing;
+	this.isMoving = false;
 }
 
 Player.prototype.update = function() {
-	if(player.collisionY < gameBoard.tiles.padding.top) {
+	if(player.y < gameBoard.tiles.padding.top) {
 		player.score += 10;
 		player.resetPosition();
 	}
@@ -266,36 +384,33 @@ Player.prototype.update = function() {
 			timer.restartTimer();
 		}
 	}
+
+	this.animate();
 };
 
 Player.prototype.render = function() {
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	setup.debugging.collision.displayCollisionArea(player);
-	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
 };
 
+
+
 Player.prototype.handleInput = function(input) {
-	var canvas = document.getElementsByTagName("canvas")[0];
-
 	if(player.movement) {
-		// if(input === "up" && this.collisionY - this.ySpeed > 0) {
 		if(input === "up") {
-			this.y -= this.ySpeed;
-			this.collisionY -= this.ySpeed;
+			this.move("y", -1)
 		}
 
-		if(input === "down" && this.collisionY + this.ySpeed < canvas.height - 138) {
-			this.y += this.ySpeed;
-			this.collisionY += this.ySpeed;
+		if(input === "down" && this.y + this.spriteOffsetYSpeed < canvas.height - 138) {
+			this.move("y", 1)
 		}
 
-		if(input === "right" && this.x + this.xSpeed < canvas.width) {
-			this.x += this.xSpeed;
+		if(input === "right" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width) {
+			this.move("x", 1)
 		}
 
-		if(input === "left" && this.x - this.xSpeed > -1) {
-			this.x -= this.xSpeed;
+		if(input === "left" && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
+			this.move("x", -1)
 		}
 	}
 };
@@ -309,7 +424,7 @@ var player = new Player();
 var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
 		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
-			allEnemies[i].collisionY + allEnemies[i].height > player.collisionY && allEnemies[i].collisionY < player.collisionY + player.height) {
+			allEnemies[i].y + allEnemies[i].height > player.y && allEnemies[i].y < player.y + player.height) {
 			player.score -= 5;
 			player.resetPosition();
 		}
