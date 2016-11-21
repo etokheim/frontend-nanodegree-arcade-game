@@ -12,6 +12,27 @@
 /*--------------------------------------------------------------
 # Setup
 --------------------------------------------------------------*/
+var doc = document,
+	win = window,
+	canvas = doc.createElement('canvas'),
+	ctx = canvas.getContext('2d');
+
+// doc.body.appendChild(canvas);
+
+window.addEventListener("load", function() {
+	canvas.width = $(window).width();
+	canvas.height = $(window).height();
+});
+
+
+window.addEventListener("resize", function() {
+	canvas.width = $(window).width();
+	canvas.height = $(window).height();
+
+	gameBoard.getWidth();
+	gameBoard.getHeight();
+});
+
 document.addEventListener('keydown', function(e) {
 	var allowedKeys = {
 		37: 'left',
@@ -51,6 +72,12 @@ var setup = {
 },
 
 gameBoard = {
+	"rows": 6,
+	"columns": 7,
+	"marginLeft": function() {
+		return Math.floor(canvas.width / 2 - (this.columns * 101) / 2);
+	},
+
 	"tiles": {
 		"width": 101,
 		"height": 82,
@@ -58,6 +85,13 @@ gameBoard = {
 			"top": 50
 		}
 	},
+
+	"width": 0,
+	"height": 0,
+
+	// Why can't I define the width like the function does?
+	"getWidth": function() {this.width = this.columns * this.tiles.width},
+	"getHeight": function() {this.height = this.rows * this.tiles.height},
 
 	"info": {
 		"scoreTable": function() {
@@ -107,7 +141,7 @@ font = {
 
 
 timer = {
-	"gameTime": 20, // In seconds
+	"gameTime": 99999999, // In seconds
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -161,7 +195,7 @@ MovableObject.prototype.move = function(direction, multiplier) {
 		this.moving.multiplier = multiplier;
 		if(this.moving.direction === "y") {
 			this.startPosition = this.y;
-		} else {		
+		} else {
 			this.startPosition = this.x;
 		}
 
@@ -184,7 +218,7 @@ MovableObject.prototype.move = function(direction, multiplier) {
 MovableObject.prototype.animate = function() {
 	var moveDistance;
 	var deltaPosition;
-	
+
 	if(this.moving.direction === "y") {
 		moveDistance = gameBoard.tiles.height;
 		this.moving.position = this.y;
@@ -193,7 +227,7 @@ MovableObject.prototype.animate = function() {
 		this.moving.position = this.x;
 	}
 
-	if(this.isMoving) {	
+	if(this.isMoving) {
 		deltaPosition = this.startPosition - this.moving.position;
 		if(Math.abs(deltaPosition) >= moveDistance) {
 			this.startPosition = this.moving.position;
@@ -276,7 +310,7 @@ Enemy.prototype.update = function(dt, index) {
 	// Multiplied by dt in order to ensure all computers play at the same speed
 
 	// Checks if this is out of bounds
-	if(this.spriteOffsetX > canvas.width) {
+	if(this.spriteOffsetX > gameBoard.width) {
 		// If out of bouds, then deletes the element.
 		allEnemies.splice(index, 1);
 	}
@@ -298,7 +332,7 @@ Enemy.prototype.update = function(dt, index) {
 
 	if(Date.now() - this.lastMoveTime >= this.moveInterval) {
 		this.move("x", 1);
-		
+
 	}
 };
 
