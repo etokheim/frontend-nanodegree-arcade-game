@@ -25,8 +25,8 @@ var Engine = (function(global) {
 		ctx = canvas.getContext('2d'),
 		lastTime;
 
-	canvas.width = 505;
-	canvas.height = 626;
+	// canvas.width = 505;
+	// canvas.height = 626;
 	doc.body.appendChild(canvas);
 
 	/* This function serves as the kickoff point for the game loop itself
@@ -39,7 +39,6 @@ var Engine = (function(global) {
 		 * would be the same for everyone (regardless of how fast their
 		 * computer is) - hurray time!
 		 */
-		var canvas = document.getElementsByTagName("canvas")[0];
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		var now = Date.now(),
 			dt = (now - lastTime) / 1000.0;
@@ -121,16 +120,14 @@ var Engine = (function(global) {
 				'images/grass-block.png',   // Row 1 of 2 of grass
 				'images/grass-block.png'    // Row 2 of 2 of grass
 			],
-			numRows = 6,
-			numCols = 5,
 			row, col;
 
 		/* Loop through the number of rows and columns we've defined above
 		 * and, using the rowImages array, draw the correct image for that
 		 * portion of the "grid"
 		 */
-		for (row = 0; row < numRows; row++) {
-			for (col = 0; col < numCols; col++) {
+		for (row = 0; row < gameBoard.rows; row++) {
+			for (col = 0; col < gameBoard.columns; col++) {
 				/* The drawImage function of the canvas' context element
 				 * requires 3 parameters: the image to draw, the x coordinate
 				 * to start drawing and the y coordinate to start drawing.
@@ -138,7 +135,7 @@ var Engine = (function(global) {
 				 * so that we get the benefits of caching these images, since
 				 * we're using them over and over.
 				 */
-				ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+				ctx.drawImage(Resources.get(rowImages[row]), col * 101 + gameBoard.marginLeft(), row * 83 + (canvas.height - gameBoard.rows * 83) - 100);
 			}
 		}
 
