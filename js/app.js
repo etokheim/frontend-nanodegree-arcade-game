@@ -141,14 +141,14 @@ timer = {
 function MovableObject() {
 	this.description = {
 		"userControlled": false, // Sets default value
-	}
+	};
 
 	this.moving = {
 		"isMoving": false,
 		"direction": "", // x or y
 		"position": 0,
 		"multiplier": 1 // 1 or -1 - inverts moving direction
-	}
+	};
 
 	this.nextMove = {};
 }
@@ -176,7 +176,7 @@ MovableObject.prototype.move = function(direction, multiplier) {
 				"direction": direction,
 				"multiplier": multiplier,
 				"queued": true
-			}
+			};
 		}
 	}
 };
@@ -217,9 +217,9 @@ MovableObject.prototype.animate = function() {
 
 	// If a move has been queued - fire it!
 	if(this.nextMove.queued) {
-		this.move(this.nextMove.direction, this.nextMove.multiplier)
+		this.move(this.nextMove.direction, this.nextMove.multiplier);
 	}
-}
+};
 
 /*--------------------------------------------------------------
 # Enemy
@@ -281,11 +281,11 @@ Enemy.prototype.update = function(dt, index) {
 		allEnemies.splice(index, 1);
 	}
 
-	now = Date.now(),
+	now = Date.now();
 	dt = (now - lastTime) / 1000.0;
 
 	if(timeSinceNewEnemy > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
-		allEnemies.push(new Enemy);
+		allEnemies.push(new Enemy());
 
 		timeSinceNewEnemy = 0;
 	} else {
@@ -308,7 +308,7 @@ Enemy.prototype.render = function() {
 };
 
 var allEnemies = [];
-allEnemies.push(new Enemy);
+allEnemies.push(new Enemy());
 	allEnemies[0].move("x", 1);
 
 
@@ -341,7 +341,7 @@ function Player() {
 	this.movement = true;
 	this.score = 0;
 	this.highScore = 0;
-};
+}
 
 Player.prototype.resetPosition = function() {
 	this.spriteOffsetX = this.defaultX - this.spriteOffsetXDifferenceHitBoxAndDrawing;
@@ -349,7 +349,7 @@ Player.prototype.resetPosition = function() {
 	this.y = this.defaultY;
 	this.spriteOffsetY = this.defaultY - this.spriteOffsetYDifferenceHitBoxAndDrawing;
 	this.isMoving = false;
-}
+};
 
 Player.prototype.update = function() {
 	if(player.y < gameBoard.tiles.padding.top) {
@@ -398,19 +398,19 @@ Player.prototype.render = function() {
 Player.prototype.handleInput = function(input) {
 	if(player.movement) {
 		if(input === "up") {
-			this.move("y", -1)
+			this.move("y", -1);
 		}
 
 		if(input === "down" && this.y + this.spriteOffsetYSpeed < canvas.height - 138) {
-			this.move("y", 1)
+			this.move("y", 1);
 		}
 
 		if(input === "right" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width) {
-			this.move("x", 1)
+			this.move("x", 1);
 		}
 
 		if(input === "left" && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
-			this.move("x", -1)
+			this.move("x", -1);
 		}
 	}
 };
