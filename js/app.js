@@ -181,9 +181,9 @@ MovableObject.prototype.move = function(direction, multiplier) {
 	}
 };
 
+var moveDistance;
+var deltaPosition;
 MovableObject.prototype.animate = function() {
-	var moveDistance;
-	var deltaPosition;
 	
 	if(this.moving.direction === "y") {
 		moveDistance = gameBoard.tiles.height;
@@ -217,7 +217,12 @@ MovableObject.prototype.animate = function() {
 
 	// If a move has been queued - fire it!
 	if(this.nextMove.queued) {
-		this.move(this.nextMove.direction, this.nextMove.multiplier);
+		if(this.nextMove.direction === "y") {
+			console.log((this.y + this.spriteOffsetYSpeed) + " < " + (canvas.height - 100));
+			this.move(this.nextMove.direction, this.nextMove.multiplier);
+		} else if(this.nextMove.direction === "x" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
+			this.move(this.nextMove.direction, this.nextMove.multiplier);
+		}
 	}
 };
 
@@ -243,7 +248,7 @@ function Enemy() {
 	this.x = this.spriteOffsetX;
 	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	this.spriteOffsetY = 53 + Math.floor(Math.random()*3) * gameBoard.tiles.height;
+	this.spriteOffsetY = 53 + Math.floor(Math.random() * 3) * gameBoard.tiles.height;
 
 	// Seems like a random number? It is, it's the placement where
 	// I thought the the ladybugs would look best
@@ -401,7 +406,7 @@ Player.prototype.handleInput = function(input) {
 			this.move("y", -1);
 		}
 
-		if(input === "down" && this.y + this.spriteOffsetYSpeed < canvas.height - 138) {
+		if(input === "down" && this.y + this.spriteOffsetYSpeed < canvas.height - 100) {
 			this.move("y", 1);
 		}
 
