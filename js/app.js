@@ -184,7 +184,7 @@ MovableObject.prototype.move = function(direction, multiplier) {
 var moveDistance;
 var deltaPosition;
 MovableObject.prototype.animate = function() {
-	
+
 	if(this.moving.direction === "y") {
 		moveDistance = gameBoard.tiles.height;
 		this.moving.position = this.y;
@@ -202,7 +202,7 @@ MovableObject.prototype.animate = function() {
 			// console.log("Stop animating player!");
 		} else {
 			// if move speed is say 15, the player will run more than 82 px (a tile) up!
-			this.moving.position = (this.moving.position + (moveDistance / 8) * this.moving.multiplier);
+			this.moving.position += (moveDistance / 8 * this.moving.multiplier) * this.v;
 			// console.log("Animating! Direction = " + this.moving.direction + ", this.startPosition = " + this.startPosition + ", position = " + this.moving.position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
 		}
 
@@ -218,7 +218,6 @@ MovableObject.prototype.animate = function() {
 	// If a move has been queued - fire it!
 	if(this.nextMove.queued) {
 		if(this.nextMove.direction === "y") {
-			console.log((this.y + this.spriteOffsetYSpeed) + " < " + (canvas.height - 100));
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
 		} else if(this.nextMove.direction === "x" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
@@ -255,12 +254,12 @@ function Enemy() {
 	this.y = this.spriteOffsetY + 82;
 	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
 
-	this.vx = 2; // 100 + Math.random() * 100;
+	this.v = (Math.random() + 0.75) * 0.5;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = 2; // Value in seconds
+	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds
 	this.maxEnemies = 5;
-	this.moveInterval = 1000; // Value in milli seconds
+	this.moveInterval = Math.random() * 500 + 500; // Value in milli seconds
 	this.isMoving = false;
 	this.startPosition = this.spriteOffsetX;
 	this.lastMoveTime = Date.now();
@@ -337,6 +336,7 @@ function Player() {
 	this.width = 45;
 	this.height = 30;
 	this.sprite = 'images/char-boy.png';
+	this.v = 1;
 
 	this.spriteOffsetXSpeed = 101;
 	this.spriteOffsetYSpeed = 83;
