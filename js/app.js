@@ -26,7 +26,7 @@ document.addEventListener('keydown', function(e) {
 var setup = {
 	"debugging": {
 		"collision": {
-			"boolean": false,
+			"boolean": true,
 
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
@@ -107,7 +107,7 @@ font = {
 
 
 timer = {
-	"gameTime": 20, // In seconds
+	"gameTime": 2000000, // In seconds
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
@@ -398,11 +398,17 @@ Player.prototype.render = function() {
 	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
 };
 
+var player = new Player();
 
 
+/*-------------------
+## Controls
+---------------------*/
 Player.prototype.handleInput = function(input) {
+	console.log(input);
 	if(player.movement) {
-		if(input === "up") {
+		// "click" is equal to a touch
+		if(input === "up" || input === "click") {
 			this.move("y", -1);
 		}
 
@@ -420,8 +426,92 @@ Player.prototype.handleInput = function(input) {
 	}
 };
 
-var player = new Player();
+function thisIsATest(element, callback) {
+	console.log("Touch events initialized on " + element);
 
+	var callbackFunction = callback || function() {console.log("No callback. Result = " + swipe.direction);};
+
+	var touch = {
+		object: {},
+
+		start: {
+			x: 0,
+			y: 0
+		},
+
+		end: {
+			x: 0,
+			y: 0
+		},	
+	};
+
+	var swipe = {
+		threshold: 50,
+		angleThreshold: 100,
+		distance: {
+			x: 0,
+			y: 0
+		}
+	};
+	
+	element.addEventListener("touchstart", function() {
+		touch.object = event.changedTouches[0];
+		touch.start.x = touch.object.pageX;
+		touch.start.y = touch.object.pageY;
+	}, false);
+
+	element.addEventListener("touchend", function() {
+		touch.object = event.changedTouches[0];
+		touch.end.x = touch.object.pageX;
+		touch.end.y = touch.object.pageY;
+
+		swipe.distance.x = touch.start.x - touch.end.x;
+		swipe.distance.y = touch.start.y - touch.end.y;
+
+		// If swiping horizontally
+		if(Math.abs(swipe.distance.x) >= swipe.threshold && Math.abs(swipe.distance.y) < swipe.angleThreshold) {
+			if(swipe.distance.x > 0) {
+				console.log("swiped left!");
+				swipe.direction = "left";
+			} else {
+				console.log("swiped right!");
+				swipe.direction = "right";
+			}
+		// Else if swiping vertically
+		} else if(Math.abs(swipe.distance.y) >= swipe.threshold && Math.abs(swipe.distance.x) < swipe.angleThreshold) {
+			if(swipe.distance.y > 0) {
+				console.log("swiped up!");
+				swipe.direction = "up";
+			} else {
+				console.log("swiped down!");
+				swipe.direction = "down";
+			}
+		// Else if swipe distance is less than swipe threshold, handle touch input as a click
+		} else if(Math.abs(swipe.distance.y) < swipe.threshold && Math.abs(swipe.distance.x) < swipe.threshold) {
+			swipe.direction = "click";
+		} else {
+			swipe.direction = false;
+		}
+
+		// .call makes the first parameter define the this keyword within the function
+		// In example:
+		// 		- callbackFunction(swipe.direction)
+		// 			- this = Window
+		//
+		// 		- callbackFunction.call(player, swipe.direction);
+		callbackFunction.call(player, swipe.direction);
+
+	}, false);
+
+	element.addEventListener("touchcancel", function() {
+		swipe.direction = false;
+	}, false);
+
+	// Prevents scrolling
+	element.addEventListener("touchmove", function() {
+		event.preventDefault();
+	}, false);
+}
 
 /*--------------------------------------------------------------
 # Collision checking

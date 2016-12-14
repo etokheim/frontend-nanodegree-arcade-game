@@ -29,6 +29,10 @@ var Engine = (function(global) {
 	canvas.height = 626;
 	doc.body.appendChild(canvas);
 
+
+		// Add touch event listener
+		thisIsATest(canvas, player.handleInput);
+
 	/* This function serves as the kickoff point for the game loop itself
 	 * and handles properly calling the update and render methods.
 	 */
