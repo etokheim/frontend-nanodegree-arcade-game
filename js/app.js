@@ -26,7 +26,7 @@ document.addEventListener('keydown', function(e) {
 var setup = {
 	"debugging": {
 		"collision": {
-			"boolean": true,
+			"boolean": false,
 
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
@@ -109,7 +109,7 @@ font = {
 
 
 timer = {
-	"gameTime": 2000000, // In seconds
+	"gameTime": 20, // In seconds
 	"startTime": 0,
 	"time": 0,
 	"timing": false,
