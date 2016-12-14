@@ -30,6 +30,7 @@ var setup = {
 
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
+					// If parameter is an array, treat it like one
 					if(Object.prototype.toString.call( object ) === '[object Array]') {
 						for (var i = 0; i < object.length; i++) {
 							ctx.beginPath();
@@ -37,6 +38,7 @@ var setup = {
 							ctx.rect(object[i].x, object[i].y, object[i].width, object[i].height);
 							ctx.stroke();
 						}
+					// Else treat it as an object
 					} else {
 						ctx.beginPath();
 						ctx.strokeStyle = "#FF0000";
@@ -181,9 +183,9 @@ MovableObject.prototype.move = function(direction, multiplier) {
 	}
 };
 
-var moveDistance;
-var deltaPosition;
 MovableObject.prototype.animate = function() {
+	var moveDistance;
+	var deltaPosition;
 
 	if(this.moving.direction === "y") {
 		moveDistance = gameBoard.tiles.height;
@@ -217,7 +219,8 @@ MovableObject.prototype.animate = function() {
 
 	// If a move has been queued - fire it!
 	if(this.nextMove.queued) {
-		if(this.nextMove.direction === "y") {
+		// If it's not moving player out of bounds
+		if(this.nextMove.direction === "y" && this.y + this.spriteOffsetYSpeed < canvas.height - 100) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
 		} else if(this.nextMove.direction === "x" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
