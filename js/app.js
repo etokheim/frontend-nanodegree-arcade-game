@@ -238,19 +238,24 @@ var dt;
 var now;
 var timeSinceNewEnemy = 0;
 
+var asdf;
+function test(a) {
+	asdf = a || Math.random();
+}
+
 Enemy.prototype = new MovableObject();
-function Enemy() {
+function Enemy(x, y) {
 	// Utilizes resources.js to load image
 	this.sprite = 'images/enemy-bug.png';
 
 	this.width = 96;
 	this.height = 65;
 
-	this.spriteOffsetX = 0 - this.width;
+	this.spriteOffsetX = x || 0 - this.width;
 	this.x = this.spriteOffsetX;
 	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
-	this.spriteOffsetY = 53 + Math.floor(Math.random() * 3) * gameBoard.tiles.height;
+	this.spriteOffsetY = y || 53 + Math.floor(Math.random() * 3) * gameBoard.tiles.height;
 
 	// Seems like a random number? It is, it's the placement where
 	// I thought the the ladybugs would look best
@@ -260,33 +265,17 @@ function Enemy() {
 	this.v = (Math.random() + 0.75) * 0.5;
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds
-	this.maxEnemies = 5;
 	this.moveInterval = Math.random() * 500 + 500; // Value in milli seconds
 	this.isMoving = false;
 	this.startPosition = this.spriteOffsetX;
 	this.lastMoveTime = Date.now();
+	this.maxEnemies = 5;
+	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds
 }
 
-function EnemySpawner() {
-
-}
-
-EnemySpawner.prototype.send = function() {
-};
-
-// *** PROBLEM ***
-// The enemy.update function only runs if there is enemies in allEnemies array
-// Therefor the spawner CANNOT be embedded in this function! If there is no enemies
-// No new ones will spawn!!!
-Enemy.prototype.update = function(dt, index) {
-	// Multiplied by dt in order to ensure all computers play at the same speed
-
-	// Checks if this is out of bounds
-	if(this.spriteOffsetX > canvas.width) {
-		// If out of bouds, then deletes the element.
-		allEnemies.splice(index, 1);
-	}
+function enemySpawner() {
+	this.maxEnemies = 5;
+	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds	
 
 	now = Date.now();
 	dt = (now - lastTime) / 1000.0;
@@ -300,12 +289,21 @@ Enemy.prototype.update = function(dt, index) {
 	}
 
 	lastTime = Date.now();
+}
+
+Enemy.prototype.update = function(dt, index) {
+	// Multiplied by dt in order to ensure all computers play at the same speed
+
+	// Checks if this is out of bounds
+	if(this.spriteOffsetX > canvas.width) {
+		// If out of bouds; delete the element.
+		allEnemies.splice(index, 1);
+	}
 
 	this.animate();
 
 	if(Date.now() - this.lastMoveTime >= this.moveInterval) {
 		this.move("x", 1);
-		
 	}
 };
 
@@ -316,7 +314,7 @@ Enemy.prototype.render = function() {
 
 var allEnemies = [];
 allEnemies.push(new Enemy());
-	allEnemies[0].move("x", 1);
+allEnemies[0].move("x", 1);
 
 
 /*--------------------------------------------------------------
@@ -408,7 +406,6 @@ var player = new Player();
 ## Controls
 ---------------------*/
 Player.prototype.handleInput = function(input) {
-	console.log(input);
 	if(player.movement) {
 		// "click" is equal to a touch
 		if(input === "up" || input === "click") {
@@ -430,7 +427,7 @@ Player.prototype.handleInput = function(input) {
 };
 
 function thisIsATest(element, callback) {
-	console.log("Touch events initialized on " + element);
+	// console.log("Touch events initialized on " + element);
 
 	var callbackFunction = callback || function() {console.log("No callback. Result = " + swipe.direction);};
 
@@ -449,7 +446,7 @@ function thisIsATest(element, callback) {
 	};
 
 	var swipe = {
-		threshold: 50,
+		threshold: 25,
 		angleThreshold: 100,
 		distance: {
 			x: 0,
@@ -474,19 +471,15 @@ function thisIsATest(element, callback) {
 		// If swiping horizontally
 		if(Math.abs(swipe.distance.x) >= swipe.threshold && Math.abs(swipe.distance.y) < swipe.angleThreshold) {
 			if(swipe.distance.x > 0) {
-				console.log("swiped left!");
 				swipe.direction = "left";
 			} else {
-				console.log("swiped right!");
 				swipe.direction = "right";
 			}
 		// Else if swiping vertically
 		} else if(Math.abs(swipe.distance.y) >= swipe.threshold && Math.abs(swipe.distance.x) < swipe.angleThreshold) {
 			if(swipe.distance.y > 0) {
-				console.log("swiped up!");
 				swipe.direction = "up";
 			} else {
-				console.log("swiped down!");
 				swipe.direction = "down";
 			}
 		// Else if swipe distance is less than swipe threshold, handle touch input as a click
