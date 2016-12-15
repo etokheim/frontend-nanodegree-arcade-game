@@ -5,6 +5,7 @@
 # Abillities
 # Enemy
 # Player
+	## Controls
 # Collision checking
 --------------------------------------------------------------*/
 
@@ -12,7 +13,7 @@
 /*--------------------------------------------------------------
 # Setup
 --------------------------------------------------------------*/
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function(event) {
 	var allowedKeys = {
 		37: 'left',
 		38: 'up',
@@ -20,14 +21,16 @@ document.addEventListener('keydown', function(e) {
 		40: 'down'
 	};
 
-	player.handleInput(allowedKeys[e.keyCode]);
+	player.handleInput(allowedKeys[event.keyCode]);
 });
 
 var setup = {
 	"debugging": {
 		"collision": {
+			// Enable/disable debugging
 			"boolean": false,
 
+			// Displays a red rectangle to visualize collision area/hit box
 			"displayCollisionArea": function(object) {
 				if(this.boolean) {
 					// If parameter is an array, treat it like one
@@ -89,9 +92,9 @@ gameBoard = {
 font = {
 	"family": "Arial",
 	"size": {
-		"default": 16,
-		"h1": 50,
-		"h2": 25,
+		"default": 16, // px
+		"h1": 50, // px
+		"h2": 25, // px
 	},
 
 	"p": function() {
@@ -109,12 +112,12 @@ font = {
 
 
 timer = {
-	"gameTime": 20, // In seconds
-	"startTime": 0,
-	"time": 0,
+	"gameTime": 20, // Seconds
+	"startTime": 0, // Seconds
+	"time": 0, // Seconds
 	"timing": false,
 	"playAgain": true,
-	"currentTime": 0,
+	"currentTime": 0, // Seconds
 
 	"timeNow": function() {
 		if(timer.timing) {
@@ -138,8 +141,9 @@ timer = {
 
 
 /*--------------------------------------------------------------
-# Abillities
+# Abilities
 --------------------------------------------------------------*/
+// All moving objects should have this function as a prototype
 function MovableObject() {
 	this.description = {
 		"userControlled": false, // Sets default value
@@ -157,10 +161,13 @@ function MovableObject() {
 
 // This functions runs (all the time) from ###.prototype.update()
 MovableObject.prototype.move = function(direction, multiplier) {
+	// If not moving; move
 	if(!this.isMoving) {
 		this.isMoving = true;
 		this.moving.direction = direction;
 		this.moving.multiplier = multiplier;
+
+		// Set start position of movement
 		if(this.moving.direction === "y") {
 			this.startPosition = this.y;
 		} else {		
@@ -169,10 +176,11 @@ MovableObject.prototype.move = function(direction, multiplier) {
 
 		// If player doesn't move - this is not a queued move.
 		this.nextMove.queued = false;
+
+	// Else; (if moving) let player queue a move
+	// This way the player doesn't have to wait until the animation
+	// ends before executing his next move.
 	} else {
-		// If player is moving - let player queue a move.
-		// This way the player doesn't have to wait till the animation
-		// to end before executing his next move.
 		if(this.description.userControlled) {
 			this.nextMove = {
 				"direction": direction,
@@ -183,6 +191,8 @@ MovableObject.prototype.move = function(direction, multiplier) {
 	}
 };
 
+// Animates "this"
+// Runs continuously from ###.prototype.update
 MovableObject.prototype.animate = function() {
 	var moveDistance;
 	var deltaPosition;
@@ -197,17 +207,21 @@ MovableObject.prototype.animate = function() {
 
 	if(this.isMoving) {	
 		deltaPosition = this.startPosition - this.moving.position;
+
+		// Calculate movement
+		// If "this" has moved the distance it's supposed to (moveDistance), then stop moving
 		if(Math.abs(deltaPosition) >= moveDistance) {
 			this.startPosition = this.moving.position;
 			this.isMoving = false;
-			this.lastMoveTime = Date.now();
-			// console.log("Stop animating player!");
+			this.timeOfLastMove = Date.now();
+		
+		// Else, continue to move
 		} else {
 			// if move speed is say 15, the player will run more than 82 px (a tile) up!
 			this.moving.position += (moveDistance / 8 * this.moving.multiplier) * this.v;
-			// console.log("Animating! Direction = " + this.moving.direction + ", this.startPosition = " + this.startPosition + ", position = " + this.moving.position + ", moveDistance = " + moveDistance + ", deltaPosition = " + deltaPosition);
 		}
 
+		// Actually move "this"
 		if(this.moving.direction === "y") {
 			this.y = this.moving.position;
 			this.spriteOffsetY = (this.moving.position - this.spriteOffsetYDifferenceHitBoxAndDrawing);
@@ -217,32 +231,42 @@ MovableObject.prototype.animate = function() {
 		}
 	}
 
-	// If a move has been queued - fire it!
+	// If a move has been queued; move it!
+	// I like to move it, move it
+	// I like to move it, move it
+	// I like to move it, move it
+	// You like to:
+	// --> Move it! <--
 	if(this.nextMove.queued) {
 		// If it's not moving player out of bounds
-		if(this.nextMove.direction === "y" && this.y + this.spriteOffsetYSpeed < canvas.height - 100) {
+		// CONSIDER FIXING:
+		// 		- This is less then ideal, but since enemies never have to queue a move
+		// 		  it works. (Enemies are supposed to move out of bounds...)
+		console.log(this.nextMove.multiplier);
+		// If moving on the Y-axis and y position + y speed * moving direction is less than canvas height, then move
+		if(this.nextMove.direction === "y" && this.y + this.spriteOffsetYSpeed * this.nextMove.multiplier < canvas.height - 100) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
-		} else if(this.nextMove.direction === "x" && this.spriteOffsetX + this.spriteOffsetXSpeed < canvas.width && this.spriteOffsetX - this.spriteOffsetXSpeed > -1) {
+
+		// Else if same except x-axis and is result is more than 0 and less than canvas.width
+		} else if(this.nextMove.direction === "x" && this.spriteOffsetX + this.spriteOffsetXSpeed * this.nextMove.multiplier < canvas.width && this.spriteOffsetX - this.spriteOffsetXSpeed * this.nextMove.multiplier*-1 > -1) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
 		}
 	}
 };
 
+
 /*--------------------------------------------------------------
 # Enemy
 --------------------------------------------------------------*/
-var enemyIndex = 0;
+var enemyIndex = 0,
+	lastTime = Date.now(),
+	dt,
+	now,
+	maxEnemies = 5,
+	newEnemyInterval = 1.5, // Value in seconds	
+	timeSinceNewEnemy = 0;
 
-var lastTime = Date.now();
-var dt;
-var now;
-var timeSinceNewEnemy = 0;
-
-var asdf;
-function test(a) {
-	asdf = a || Math.random();
-}
-
+// Enemy constructor
 Enemy.prototype = new MovableObject();
 function Enemy(x, y) {
 	// Utilizes resources.js to load image
@@ -251,38 +275,44 @@ function Enemy(x, y) {
 	this.width = 96;
 	this.height = 65;
 
+	// This is more relevant for the player sprite but is meant to separate the hit box
+	// from the sprite. See this.y for more.
 	this.spriteOffsetX = x || 0 - this.width;
 	this.x = this.spriteOffsetX;
 	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
+	// If you look at the sprite pictures there is a lot of empty space, which should not
+	// be a part of the hit box. Therefor some offsetting is necessary.
 	this.spriteOffsetY = y || 53 + Math.floor(Math.random() * 3) * gameBoard.tiles.height;
-
 	// Seems like a random number? It is, it's the placement where
 	// I thought the the ladybugs would look best
 	this.y = this.spriteOffsetY + 82;
 	this.spriteOffsetYDifferenceHitBoxAndDrawing = this.y - this.spriteOffsetY;
 
+	// v = velocity
 	this.v = (Math.random() + 0.75) * 0.5;
+
+	// Unique indexes are necessary when removing elements
 	this.index = enemyIndex;
 	enemyIndex++;
-	this.moveInterval = Math.random() * 500 + 500; // Value in milli seconds
+
+	// How often enemies move
+	this.moveInterval = Math.random() * 500 + 500; // Value in milliseconds
+
 	this.isMoving = false;
 	this.startPosition = this.spriteOffsetX;
-	this.lastMoveTime = Date.now();
-	this.maxEnemies = 5;
-	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds
+	this.timeOfLastMove = Date.now();
 }
 
+// Enemy creation logic, runs continuously from update() in engine.js
 function enemySpawner() {
-	this.maxEnemies = 5;
-	this.newEnemyInterval = Math.random() * 2 + 1; // Value in seconds	
-
 	now = Date.now();
 	dt = (now - lastTime) / 1000.0;
 
-	if(timeSinceNewEnemy > this.newEnemyInterval && allEnemies.length < this.maxEnemies) {
+	// Creates a new enemy if there is less enemies then maxEnemies and timeSinceNewEnemy
+	// is greater then newEnemyInterval
+	if(timeSinceNewEnemy > newEnemyInterval && allEnemies.length < maxEnemies) {
 		allEnemies.push(new Enemy());
-
 		timeSinceNewEnemy = 0;
 	} else {
 		timeSinceNewEnemy += dt;
@@ -291,22 +321,22 @@ function enemySpawner() {
 	lastTime = Date.now();
 }
 
+// Runs continuously from updateEntities() in engine.js
 Enemy.prototype.update = function(dt, index) {
-	// Multiplied by dt in order to ensure all computers play at the same speed
-
-	// Checks if this is out of bounds
+	// If "this" is out of bounds; delete it
 	if(this.spriteOffsetX > canvas.width) {
-		// If out of bouds; delete the element.
 		allEnemies.splice(index, 1);
 	}
 
 	this.animate();
 
-	if(Date.now() - this.lastMoveTime >= this.moveInterval) {
+	if(Date.now() - this.timeOfLastMove >= this.moveInterval) {
 		this.move("x", 1);
 	}
 };
 
+// Runs continuously from renderEntities() in engine.js
+// Draws sprites to the canvas
 Enemy.prototype.render = function() {
 	setup.debugging.collision.displayCollisionArea(allEnemies);
 	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
@@ -320,7 +350,10 @@ allEnemies[0].move("x", 1);
 /*--------------------------------------------------------------
 # Player
 --------------------------------------------------------------*/
+// Gives Player the MovableObjects abilities
 Player.prototype = new MovableObject();
+
+// Player constructor
 function Player() {
 	this.spriteOffsetX = 202;
 	this.defaultX = 202;
@@ -337,46 +370,58 @@ function Player() {
 	this.width = 45;
 	this.height = 30;
 	this.sprite = 'images/char-boy.png';
+	// Velocity
 	this.v = 1;
 
 	this.spriteOffsetXSpeed = 101;
 	this.spriteOffsetYSpeed = 83;
 
-	// Player attributes
 	this.description.userControlled = true;
 	this.movement = true;
 	this.score = 0;
 	this.highScore = 0;
 }
 
-Player.prototype.resetPosition = function() {
-	this.spriteOffsetX = this.defaultX - this.spriteOffsetXDifferenceHitBoxAndDrawing;
-	this.x = this.defaultX;
-	this.y = this.defaultY;
-	this.spriteOffsetY = this.defaultY - this.spriteOffsetYDifferenceHitBoxAndDrawing;
+// Moves the player to x, y
+// If no values is passed to the parameters, they are set to player.defaultX/Y
+Player.prototype.reposition = function(x, y) {
+	console.log(x);
+	x = x || this.defaultX;
+	y = y || this.defaultY;
+	console.log(x);
+
+
+	this.spriteOffsetX = x - this.spriteOffsetXDifferenceHitBoxAndDrawing;
+	this.x = x;
+	this.y = y;
+	this.spriteOffsetY = y - this.spriteOffsetYDifferenceHitBoxAndDrawing;
 	this.isMoving = false;
 };
 
+// Runs continuously from updateEntities() in engine.js
 Player.prototype.update = function() {
+	// If player reaches the top of the board; increase score and reset position
 	if(player.y < gameBoard.tiles.padding.top) {
 		player.score += 10;
-		player.resetPosition();
+		player.reposition();
 	}
 
 	if(timer.timing) {
-		// If times up:
+		// If time's up:
 		if (timer.currentTime <= 0) {
 			// If new record, then sets new high score
 			if(player.score > player.highScore) {
 				player.highScore = player.score;
 			}
 
-			// Sets the timer before the confirm message - so it doesn't say -0.00
+			// Sets the timer before the confirm message and renders the timer - so it doesn't say -0.00
+			// Doesn't work for some reason...
 			timer.timing = false;
-			timer.currentTime = 0.00;
+			timer.currentTime = 10.00;
 			timer.display();
-			player.resetPosition();
+			player.reposition();
 
+			// Asks weather the player wants to play again or not
 			if(confirm("Time's up! Your score: " + player.score + " - Well done!\n\nClick OK to play again, cancel to give up")) {
 				// Sets new high score if new record
 				player.score = 0;
@@ -394,6 +439,8 @@ Player.prototype.update = function() {
 	this.animate();
 };
 
+// Runs continuously from renderEntities() in engine.js
+// Draws sprites to the canvas
 Player.prototype.render = function() {
 	setup.debugging.collision.displayCollisionArea(player);
 	ctx.drawImage(Resources.get(this.sprite), this.spriteOffsetX, this.spriteOffsetY);
@@ -426,9 +473,8 @@ Player.prototype.handleInput = function(input) {
 	}
 };
 
+// Watches touches on assigned element 
 function thisIsATest(element, callback) {
-	// console.log("Touch events initialized on " + element);
-
 	var callbackFunction = callback || function() {console.log("No callback. Result = " + swipe.direction);};
 
 	var touch = {
@@ -475,6 +521,7 @@ function thisIsATest(element, callback) {
 			} else {
 				swipe.direction = "right";
 			}
+
 		// Else if swiping vertically
 		} else if(Math.abs(swipe.distance.y) >= swipe.threshold && Math.abs(swipe.distance.x) < swipe.angleThreshold) {
 			if(swipe.distance.y > 0) {
@@ -482,6 +529,7 @@ function thisIsATest(element, callback) {
 			} else {
 				swipe.direction = "down";
 			}
+
 		// Else if swipe distance is less than swipe threshold, handle touch input as a click
 		} else if(Math.abs(swipe.distance.y) < swipe.threshold && Math.abs(swipe.distance.x) < swipe.threshold) {
 			swipe.direction = "click";
@@ -495,6 +543,7 @@ function thisIsATest(element, callback) {
 		// 			- this = Window
 		//
 		// 		- callbackFunction.call(player, swipe.direction);
+		// 			- this = player
 		callbackFunction.call(player, swipe.direction);
 
 	}, false);
@@ -509,15 +558,17 @@ function thisIsATest(element, callback) {
 	}, false);
 }
 
+
 /*--------------------------------------------------------------
 # Collision checking
 --------------------------------------------------------------*/
+// Runs continuously from update() in engine.js
 var checkCollisions = function() {
 	for (var i = 0; i < allEnemies.length; i++) {
 		if (allEnemies[i].x + allEnemies[i].width > player.x && allEnemies[i].x < player.x + player.width &&
 			allEnemies[i].y + allEnemies[i].height > player.y && allEnemies[i].y < player.y + player.height) {
 			player.score -= 5;
-			player.resetPosition();
+			player.reposition();
 		}
 	}
 };
