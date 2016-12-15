@@ -25,13 +25,22 @@ var Engine = (function(global) {
 		ctx = canvas.getContext('2d'),
 		lastTime;
 
-	canvas.width = 505;
-	canvas.height = 626;
+	function setCanvasSize() {
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+	}
+
+	setCanvasSize();
+
+	window.addEventListener("resize", function() {
+		setCanvasSize();
+	});
+
 	doc.body.appendChild(canvas);
 
 
-		// Add touch event listener
-		thisIsATest(canvas, player.handleInput);
+	// Add touch event listener
+	touchInputListener(canvas, player.handleInput);
 
 	/* This function serves as the kickoff point for the game loop itself
 	 * and handles properly calling the update and render methods.
