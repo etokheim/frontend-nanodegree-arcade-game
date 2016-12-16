@@ -39,3 +39,4 @@ Thumbs.db
 # Custom ignores #
 ##################
 *.sublime-workspace
+*.sublime-project
