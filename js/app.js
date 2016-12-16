@@ -242,7 +242,6 @@ MovableObject.prototype.animate = function() {
 		// CONSIDER FIXING:
 		// 		- This is less then ideal, but since enemies never have to queue a move
 		// 		  it works. (Enemies are supposed to move out of bounds...)
-		console.log(this.nextMove.multiplier);
 		// If moving on the Y-axis and y position + y speed * moving direction is less than canvas height, then move
 		if(this.nextMove.direction === "y" && this.y + this.spriteOffsetYSpeed * this.nextMove.multiplier < canvas.height - 100) {
 			this.move(this.nextMove.direction, this.nextMove.multiplier);
@@ -385,17 +384,16 @@ function Player() {
 // Moves the player to x, y
 // If no values is passed to the parameters, they are set to player.defaultX/Y
 Player.prototype.reposition = function(x, y) {
-	console.log(x);
 	x = x || this.defaultX;
 	y = y || this.defaultY;
-	console.log(x);
-
 
 	this.spriteOffsetX = x - this.spriteOffsetXDifferenceHitBoxAndDrawing;
 	this.x = x;
 	this.y = y;
 	this.spriteOffsetY = y - this.spriteOffsetYDifferenceHitBoxAndDrawing;
 	this.isMoving = false;
+	// Resets the queued move so player doesn't move when restarting the game
+	this.nextMove = {};
 };
 
 // Runs continuously from updateEntities() in engine.js
