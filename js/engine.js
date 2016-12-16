@@ -19,28 +19,13 @@ var Engine = (function(global) {
 	 * create the canvas element, grab the 2D context for that canvas
 	 * set the canvas elements height/width and add it to the DOM.
 	 */
-	var doc = global.document,
-		win = global.window,
-		canvas = doc.createElement('canvas'),
-		ctx = canvas.getContext('2d'),
-		lastTime;
-
-	function setCanvasSize() {
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
-	}
-
-	setCanvasSize();
-
-	window.addEventListener("resize", function() {
-		setCanvasSize();
-	});
-
-	doc.body.appendChild(canvas);
 
 
 	// Add touch event listener
 	touchInputListener(canvas, player.handleInput);
+
+	// Get the game starting
+	gameBoard = new GameBoard();
 
 	/* This function serves as the kickoff point for the game loop itself
 	 * and handles properly calling the update and render methods.
@@ -52,7 +37,7 @@ var Engine = (function(global) {
 		 * would be the same for everyone (regardless of how fast their
 		 * computer is) - hurray time!
 		 */
-		var canvas = document.getElementsByTagName("canvas")[0];
+
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		var now = Date.now(),
 			dt = (now - lastTime) / 1000.0;
@@ -135,8 +120,8 @@ var Engine = (function(global) {
 				'images/grass-block.png',   // Row 1 of 2 of grass
 				'images/grass-block.png'    // Row 2 of 2 of grass
 			],
-			numRows = 6,
-			numCols = 5,
+			numRows = gameBoard.rows,
+			numCols = gameBoard.columns,
 			row, col;
 
 		/* Loop through the number of rows and columns we've defined above
@@ -152,7 +137,7 @@ var Engine = (function(global) {
 				 * so that we get the benefits of caching these images, since
 				 * we're using them over and over.
 				 */
-				ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+				ctx.drawImage(Resources.get(rowImages[row]), col * gameBoard.tiles.width + gameBoard.padding.left, row * gameBoard.tiles.height);
 			}
 		}
 

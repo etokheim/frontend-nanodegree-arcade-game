@@ -13,6 +13,30 @@
 /*--------------------------------------------------------------
 # Setup
 --------------------------------------------------------------*/
+var doc = document,
+	win = window,
+	canvasElement = doc.createElement('canvas'),
+	ctx = canvasElement.getContext('2d'),
+	lastTime;
+
+doc.body.appendChild(canvasElement);
+
+var canvas = document.getElementsByTagName("canvas")[0];
+
+// Resizes the canvas with the window size
+function setCanvasSize() {
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight-4;
+}
+
+setCanvasSize();
+
+window.addEventListener("resize", function() {
+	gameBoard.calculateTileSize();
+	gameBoard.padding.calculate();
+	setCanvasSize();
+});
+
 document.addEventListener('keydown', function(event) {
 	var allowedKeys = {
 		37: 'left',
@@ -53,40 +77,6 @@ var setup = {
 		}
 	},
 
-},
-
-gameBoard = {
-	"tiles": {
-		"width": 101,
-		"height": 82,
-		"padding": {
-			"top": 50
-		}
-	},
-
-	"info": {
-		"scoreTable": function() {
-			ctx.fillStyle = "rgb(0, 0, 0)";
-			ctx.font = font.h2();
-			ctx.textAlign = "center";
-			ctx.fillText("Score: " + player.score, canvas.width / 2, font.size.h2);
-		},
-
-		"render": function() {
-			this.scoreTable();
-		},
-
-		"displayFinalScore": function() {
-			if(!timer.playAgain) {
-				ctx.fillStyle = "rgb(0, 0, 0)";
-				ctx.font = font.h1();
-				ctx.textAlign = "center";
-				ctx.fillText("Final score: " + player.highScore, canvas.width / 2, canvas.height / 2 - 40);
-				ctx.font = font.p();
-				ctx.fillText("Refresh page to play again! :)", canvas.width / 2, canvas.height / 2 + 20);
-			}
-		}
-	},
 },
 
 font = {
@@ -138,6 +128,74 @@ timer = {
 		ctx.fillText("Time left: " + this.currentTime.toFixed(2), canvas.width / 2 - 75, canvas.height - 10);
 	}
 };
+
+// Game board constructor
+function GameBoard() {
+	var that = this;
+
+	this.columns = 5;
+	this.rows = 6;
+
+
+	this.tiles = {
+		defaultWidth: 101,
+		width: 101,
+		defaultHeight: 82,
+		height: 82,
+		padding: {
+			"top": 50
+		}
+	};
+
+	this.padding = {
+		left: 0,
+
+		calculate: function() {
+			this.left = canvas.width / 2 - (that.columns / 2) * that.tiles.width;
+		}
+	};
+
+	this.padding.calculate();
+
+	this.maxWidth = this.tiles.width * this.columns;
+
+	this.calculateTileSize = function() {
+		if(canvas.width > that.maxWidth) {
+			that.tiles.width = that.tiles.defaultWidth;
+			that.tiles.height = that.tiles.defaultHeight;
+		} else if(canvas.width < that.maxWidth) {
+			that.tiles.width = canvas.width / that.columns;
+
+			var percentage = that.tiles.width / that.tiles.defaultWidth;
+			that.tiles.height = that.tiles.defaultHeight * percentage;
+		}
+	},
+
+	this.info = {
+		"scoreTable": function() {
+			ctx.fillStyle = "rgb(0, 0, 0)";
+			ctx.font = font.h2();
+			ctx.textAlign = "center";
+			ctx.fillText("Score: " + player.score, canvas.width / 2, font.size.h2);
+		},
+
+		"render": function() {
+			this.scoreTable();
+		},
+
+		"displayFinalScore": function() {
+			if(!timer.playAgain) {
+				ctx.fillStyle = "rgb(0, 0, 0)";
+				ctx.font = font.h1();
+				ctx.textAlign = "center";
+				ctx.fillText("Final score: " + player.highScore, canvas.width / 2, canvas.height / 2 - 40);
+				ctx.font = font.p();
+				ctx.fillText("Refresh page to play again! :)", canvas.width / 2, canvas.height / 2 + 20);
+			}
+		}
+	}
+}
+
 
 
 /*--------------------------------------------------------------
@@ -264,7 +322,7 @@ var enemyIndex = 0,
 	now,
 	maxEnemies = 5,
 	newEnemyInterval = 1.5, // Value in seconds
-	timeSinceNewEnemy = 0;
+	timeSinceNewEnemy = newEnemyInterval; // Default should be equal to newEnemyInterval in order to kick off the game sooner
 
 // Enemy constructor
 Enemy.prototype = new MovableObject();
@@ -277,8 +335,8 @@ function Enemy(x, y) {
 
 	// This is more relevant for the player sprite but is meant to separate the hit box
 	// from the sprite. See this.y for more.
-	this.spriteOffsetX = x || 0 - this.width;
-	this.x = this.spriteOffsetX;
+	this.spriteOffsetX = x || 0 - this.width + gameBoard.padding.left;
+	this.x = this.spriteOffsetX + gameBoard.padding.left;
 	this.spriteOffsetXDifferenceHitBoxAndDrawing = this.x - this.spriteOffsetX;
 
 	// If you look at the sprite pictures there is a lot of empty space, which should not
@@ -343,8 +401,6 @@ Enemy.prototype.render = function() {
 };
 
 var allEnemies = [];
-allEnemies.push(new Enemy());
-allEnemies[0].move("x", 1);
 
 
 /*--------------------------------------------------------------

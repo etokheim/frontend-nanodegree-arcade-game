@@ -2,12 +2,7 @@ body {
 	width: 100vw;
 	/*height: 95vh;*/
 	margin: 0;
-    background-color: skyblue;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
+	background-color: skyblue;
 }
 
 canvas {
