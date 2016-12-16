@@ -170,7 +170,7 @@ MovableObject.prototype.move = function(direction, multiplier) {
 		// Set start position of movement
 		if(this.moving.direction === "y") {
 			this.startPosition = this.y;
-		} else {		
+		} else {
 			this.startPosition = this.x;
 		}
 
@@ -205,7 +205,7 @@ MovableObject.prototype.animate = function() {
 		this.moving.position = this.x;
 	}
 
-	if(this.isMoving) {	
+	if(this.isMoving) {
 		deltaPosition = this.startPosition - this.moving.position;
 
 		// Calculate movement
@@ -214,7 +214,7 @@ MovableObject.prototype.animate = function() {
 			this.startPosition = this.moving.position;
 			this.isMoving = false;
 			this.timeOfLastMove = Date.now();
-		
+
 		// Else, continue to move
 		} else {
 			// if move speed is say 15, the player will run more than 82 px (a tile) up!
@@ -263,7 +263,7 @@ var enemyIndex = 0,
 	dt,
 	now,
 	maxEnemies = 5,
-	newEnemyInterval = 1.5, // Value in seconds	
+	newEnemyInterval = 1.5, // Value in seconds
 	timeSinceNewEnemy = 0;
 
 // Enemy constructor
@@ -417,7 +417,7 @@ Player.prototype.update = function() {
 			// Sets the timer before the confirm message and renders the timer - so it doesn't say -0.00
 			// Doesn't work for some reason...
 			timer.timing = false;
-			timer.currentTime = 10.00;
+			timer.currentTime = 0.00;
 			timer.display();
 			player.reposition();
 
@@ -473,7 +473,7 @@ Player.prototype.handleInput = function(input) {
 	}
 };
 
-// Watches touches on assigned element 
+// Watches touches on assigned element
 function thisIsATest(element, callback) {
 	var callbackFunction = callback || function() {console.log("No callback. Result = " + swipe.direction);};
 
@@ -488,7 +488,7 @@ function thisIsATest(element, callback) {
 		end: {
 			x: 0,
 			y: 0
-		},	
+		},
 	};
 
 	var swipe = {
@@ -499,7 +499,7 @@ function thisIsATest(element, callback) {
 			y: 0
 		}
 	};
-	
+
 	element.addEventListener("touchstart", function() {
 		touch.object = event.changedTouches[0];
 		touch.start.x = touch.object.pageX;
