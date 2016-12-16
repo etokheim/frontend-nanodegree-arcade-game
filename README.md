@@ -7,10 +7,10 @@ You can play the game [here](https://etokheim.github.io/Udacity/09%20Classic%20A
 
 ### Gameplay:
 The gameplay is pretty simple:
-	* Use the arrow keys or swipe the screen to move.
-	* You score 10 points if you manage to cross the road and go all the way to the top!
-	* If you are hit by an enemy you lose 5 points and are moved back to the starting point.
-	* You have 20.0 seconds to score as much as possible, good luck!
+  * Use the arrow keys or swipe the screen to move.
+  * You score 10 points if you manage to cross the road and go all the way to the top!
+  * If you are hit by an enemy you lose 5 points and are moved back to the starting point.
+  * You have 20.0 seconds to score as much as possible, good luck!
 
 ## Download
 To download simply download the .zip version or clone it by doing a git clone: `` $ git clone [URL] ``. Get URL or download .zip by clicking green button above (clone or download).
