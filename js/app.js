@@ -399,17 +399,17 @@ Player.prototype.reposition = function(x, y) {
 // Runs continuously from updateEntities() in engine.js
 Player.prototype.update = function() {
 	// If player reaches the top of the board; increase score and reset position
-	if(player.y < gameBoard.tiles.padding.top) {
-		player.score += 10;
-		player.reposition();
+	if(this.y < gameBoard.tiles.padding.top) {
+		this.score += 10;
+		this.reposition();
 	}
 
 	if(timer.timing) {
 		// If time's up:
 		if (timer.currentTime <= 0) {
 			// If new record, then sets new high score
-			if(player.score > player.highScore) {
-				player.highScore = player.score;
+			if(this.score > this.highScore) {
+				this.highScore = this.score;
 			}
 
 			// Sets the timer before the confirm message and renders the timer - so it doesn't say -0.00
@@ -417,14 +417,14 @@ Player.prototype.update = function() {
 			timer.timing = false;
 			timer.currentTime = 0.00;
 			timer.display();
-			player.reposition();
+			this.reposition();
 
 			// Asks weather the player wants to play again or not
-			if(confirm("Time's up! Your score: " + player.score + " - Well done!\n\nClick OK to play again, cancel to give up")) {
+			if(confirm("Time's up! Your score: " + this.score + " - Well done!\n\nClick OK to play again, cancel to give up")) {
 				// Sets new high score if new record
-				player.score = 0;
+				this.score = 0;
 			} else {
-				player.movement = false;
+				this.movement = false;
 				timer.playAgain = false;
 			}
 		}
