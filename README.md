@@ -1,7 +1,7 @@
 #Frogger game
 As part of Udacity's nanodegree on front-end developement, I made a frogger game - Try it out if you'd like! :)
 
-###[Play online](https://etokheim.github.io/Udacity/09%20Classic%20Arcade%20Game%20Clone/03%20Project%20-%20Classic%20Arcade%20Game%20-%20Ladybug/frontend-nanodegree-arcade-game/) or download the project and play locally (instructions below).
+**[Play online](https://etokheim.github.io/Udacity/09%20Classic%20Arcade%20Game%20Clone/03%20Project%20-%20Classic%20Arcade%20Game%20-%20Ladybug/frontend-nanodegree-arcade-game/) or download the project to play locally (instructions below).**
 
 ## How to play
 ### Gameplay:
